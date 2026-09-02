@@ -1,0 +1,28 @@
+{
+	"version": 3,
+	"configurePresets": [
+		{
+			"hidden": true,
+			"name": "ninja",
+			"generator": "Ninja"
+		},
+		{
+			"inherits": "ninja",
+			"name": "debug",
+			"displayName": "Debug",
+			"binaryDir": "${sourceDir}/build/debug",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug"
+			}
+		},
+		{
+			"inherits": "ninja",
+			"name": "release",
+			"displayName": "Release",
+			"binaryDir": "${sourceDir}/build/release",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release"
+			}
+		}
+	]
+}

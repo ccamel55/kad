@@ -1,0 +1,24 @@
+[submodule "thirdparty/CLI11"]
+	path = thirdparty/CLI11
+	url = git@github.com:CLIUtils/CLI11.git
+[submodule "thirdparty/Catch2"]
+	path = thirdparty/Catch2
+	url = git@github.com:catchorg/Catch2.git
+[submodule "thirdparty/json"]
+	path = thirdparty/json
+	url = git@github.com:nlohmann/json.git
+[submodule "thirdparty/magic_enum"]
+	path = thirdparty/magic_enum
+	url = git@github.com:Neargye/magic_enum.git
+[submodule "thirdparty/rapidfuzz-cpp"]
+	path = thirdparty/rapidfuzz-cpp
+	url = git@github.com:rapidfuzz/rapidfuzz-cpp.git
+[submodule "thirdparty/FTXUI"]
+	path = thirdparty/FTXUI
+	url = git@github.com:ArthurSonzogni/FTXUI.git
+[submodule "thirdparty/reproc"]
+	path = thirdparty/reproc
+	url = git@github.com:daandemeyer/reproc.git
+[submodule "thirdparty/spdlog"]
+	path = thirdparty/spdlog
+	url = git@github.com:gabime/spdlog.git
