@@ -10,6 +10,7 @@ add_executable(
 		src/tui/tui.cpp
 		src/context/config.cpp
 		src/context/context.cpp
+		src/context/preset.cpp
 )
 
 target_include_directories(

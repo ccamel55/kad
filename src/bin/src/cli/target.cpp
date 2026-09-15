@@ -7,12 +7,12 @@ using namespace kad::cli;
 
 namespace
 {
-	class SubCommandBuild final
-		: public CommandBase
+	class SubCommandBuild final : public CommandBase
 	{
 	public:
 		SubCommandBuild(
 			const CommandTarget::State& parent_state,
+			const std::optional<kad::context::Context>& context,
 			CLI::App* parent,
 			CLI::Option* option_name
 		)
@@ -23,6 +23,7 @@ namespace
 					"Build target"
 				)
 			}
+			, parent_state_{ parent_state }
 		{
 			command_->needs(option_name);
 			command_->alias("b");
@@ -35,15 +36,15 @@ namespace
 	private:
 		void HandleCommand()
 		{
-			std::println("Handled target->build command");
+			std::println("Handled target->build command preset({}) target({})", parent_state_.preset, parent_state_.target);
 		}
 
 	private:
+		const CommandTarget::State& parent_state_;
 
 	};
 
-	class SubCommandBuildAndRun final
-		: public CommandBase
+	class SubCommandBuildAndRun final : public CommandBase
 	{
 	public:
 		struct State
@@ -54,6 +55,7 @@ namespace
 
 		SubCommandBuildAndRun(
 			const CommandTarget::State& parent_state,
+			const std::optional<kad::context::Context>& context,
 			CLI::App* parent,
 			CLI::Option* option_name
 		)
@@ -64,6 +66,7 @@ namespace
 					"Build and run target"
 				)
 			}
+			, parent_state_{ parent_state }
 		{
 			command_->needs(option_name);
 			command_->alias("r");
@@ -84,10 +87,17 @@ namespace
 	private:
 		void HandleCommand()
 		{
-			std::println("Handled target->run command debug({}) args({})", state_.debug, kad::common::FmtIterable{ state_.args });
+			std::println(
+				"Handled target->run command preset({}) target({}) debug({}) args({})",
+				parent_state_.preset,
+				parent_state_.target,
+				state_.debug,
+				kad::common::FmtIterable{ state_.args }
+			);
 		}
 
 	private:
+		const CommandTarget::State& parent_state_;
 		State state_;
 
 	};
@@ -114,11 +124,13 @@ CommandTarget::CommandTarget(CLI::App* parent)
 		->add_option("target", state_.target, "Target name")
 		->required(false);
 
-	commands_.emplace_back(std::make_unique<SubCommandBuild>(state_, command_, target));
-	commands_.emplace_back(std::make_unique<SubCommandBuildAndRun>(state_, command_, target));
+	commands_.emplace_back(std::make_unique<SubCommandBuild>(state_, context_, command_, target));
+	commands_.emplace_back(std::make_unique<SubCommandBuildAndRun>(state_, context_, command_, target));
 
 	command_->callback([this]()
 	{
+		context_.emplace(FindRootFolderOrThrow());
+
 		if (AppHasSubcommand(command_))
 		{
 			return;

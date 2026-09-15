@@ -1,11 +1,11 @@
 #pragma once
 
 #include <kad/bin/cli/base.hpp>
+#include <kad/bin/context/context.hpp>
 
 namespace kad::cli
 {
-	class CommandTarget final
-		: public CommandBase
+	class CommandTarget final : public CommandBase
 	{
 	public:
 		struct State
@@ -20,6 +20,8 @@ namespace kad::cli
 		void HandleCommand();
 
 	private:
+		std::optional<context::Context> context_;
+
 		State state_;
 		std::vector<std::unique_ptr<CommandBase>> commands_;
 

@@ -16,6 +16,7 @@ Tui::Tui(const TuiData& data)
 void Tui::RunBlocking()
 {
 	auto screen = ftxui::App::Fullscreen();
+	screen.TrackMouse(false);
 
 	auto entries = data_.targets
 		| std::ranges::views::transform([](const auto& target){ return target.name; })

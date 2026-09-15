@@ -8,11 +8,9 @@
 
 namespace kad::context
 {
-	static constexpr auto KAD_FOLDER	= ".kad";
-
 	/// Recursively search the current working directory and it's parents to find
-	/// the data folder.
-	[[nodiscard]] std::optional<std::filesystem::path> FindDataFolder(
+	/// the root directory.
+	[[nodiscard]] std::optional<std::filesystem::path> FindRootDirectory(
 		const std::filesystem::path& cwd = std::filesystem::current_path(),
 		size_t max_depth = 100
 	);
@@ -20,9 +18,16 @@ namespace kad::context
 	class Context : public kad::common::NoCopy
 	{
 	public:
-		explicit Context(const std::filesystem::path& path_kad, bool create_if_not_exists = false);
+		explicit Context(const std::filesystem::path& path_root, bool create_if_not_exists = false);
+
+		[[nodiscard]] Config& config() { return config_; }
+		[[nodiscard]] const Config& config() const { return config_; }
+
+		[[nodiscard]] const std::filesystem::path& path_root() const { return path_root_; }
+		[[nodiscard]] const std::filesystem::path& path_kad_folder() const { return path_kad_; }
 
 	private:
+		std::filesystem::path path_root_;
 		std::filesystem::path path_kad_;
 
 		Config config_;

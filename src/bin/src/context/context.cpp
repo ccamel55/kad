@@ -4,6 +4,11 @@ using namespace kad::context;
 
 namespace
 {
+	static constexpr auto KAD_FOLDER	= ".kad";
+}
+
+namespace
+{
 	[[nodiscard]] std::filesystem::path GetPathSafe(const std::filesystem::path& path, bool create_if_not_exists)
 	{
 		if (!std::filesystem::exists(path))
@@ -21,7 +26,7 @@ namespace
 	}
 }
 
-std::optional<std::filesystem::path> kad::context::FindDataFolder(
+std::optional<std::filesystem::path> kad::context::FindRootDirectory(
 	const std::filesystem::path& cwd,
 	size_t max_depth
 )
@@ -29,10 +34,9 @@ std::optional<std::filesystem::path> kad::context::FindDataFolder(
 	std::filesystem::path current = std::filesystem::absolute(cwd);
 	for (size_t i = 0; i < max_depth; ++i)
 	{
-		auto data_folder = current / KAD_FOLDER;
-		if (std::filesystem::is_directory(data_folder))
+		if (std::filesystem::is_directory(current / KAD_FOLDER))
 		{
-			return std::make_optional(std::move(data_folder));
+			return std::make_optional(std::move(current));
 		}
 
 		if (!current.has_relative_path())
@@ -46,9 +50,10 @@ std::optional<std::filesystem::path> kad::context::FindDataFolder(
 	throw std::runtime_error("max search depth exceeded");
 }
 
-Context::Context(const std::filesystem::path& path_kad, bool create_if_not_exists)
-	: path_kad_{ GetPathSafe(path_kad, create_if_not_exists) }
-	, config_{ path_kad }
+Context::Context(const std::filesystem::path& path_root, bool create_if_not_exists)
+	: path_root_{ path_root }
+	, path_kad_{ GetPathSafe(path_root_ / KAD_FOLDER, create_if_not_exists) }
+	, config_{ path_kad_ }
 {
 
 }

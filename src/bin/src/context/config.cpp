@@ -1,4 +1,5 @@
 #include <kad/bin/context/config.hpp>
+#include <kad/common/release_assert.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -10,12 +11,22 @@ namespace
 {
 	constexpr auto KAD_CONFIG = "config.json";
 	constexpr auto KAD_PRESETS = "presets";
+
+	bool CanMigrate()
+	{
+		return false;
+	}
+
+	void ApplyMigration()
+	{
+
+	}
 }
 
 template <>
-struct nlohmann::adl_serializer<kad::context::config::Data>
+struct nlohmann::adl_serializer<kad::context::config::Config>
 {
-	using Type = kad::context::config::Data;
+	using Type = kad::context::config::Config;
 
 	static void from_json(const json& json, Type& object)
 	{
@@ -34,13 +45,10 @@ Config::Config(const std::filesystem::path& path_kad)
 	: path_config_{ path_kad / KAD_CONFIG }
 	, path_config_presets_{ path_kad / KAD_PRESETS }
 {
-	// Create root config file.
 	if (!std::filesystem::is_regular_file(path_config_))
 	{
-		data_.revision = config::REVISION;
-		data_.active_preset = "";
-
-		nlohmann::json data_json(data_);
+		// Create root config file if it doesn't exist
+		nlohmann::json data_json(config_);
 		{
 			std::ofstream out(path_config_);
 			out << data_json.dump(4);
@@ -48,52 +56,123 @@ Config::Config(const std::filesystem::path& path_kad)
 	}
 	else
 	{
+		// Load existing config file
 		std::ifstream in(path_config_);
-		data_ = nlohmann::json::parse(in).get<config::Data>();
+		config_ = nlohmann::json::parse(in).get<config::Config>();
 
-		if (data_.revision != config::REVISION)
+		if (config_.revision != config::REVISION) [[unlikely]]
 		{
-			throw std::runtime_error(std::format(
-				"config revisions incompatible, manual migration required. current_revision({}) config_revision({})",
-				config::REVISION, data_.revision
-			));
+			if (!CanMigrate())
+			{
+				throw std::runtime_error(std::format(
+					"config revisions incompatible, manual migration required. current_revision({}) config_revision({})",
+					config::REVISION, config_.revision
+				));
+			}
+
+			ApplyMigration();
 		}
 	}
 
-	// Create presets config file.
 	if (!std::filesystem::is_directory(path_config_presets_))
 	{
+		// Create presets directory if it doesn't exist
 		std::filesystem::create_directories(path_config_presets_);
 	}
 	else
 	{
+		// Look for all presets. Preset file name must match CMake preset name.
 		for (const auto entry: std::filesystem::directory_iterator{ path_config_presets_ })
 		{
-			if (!entry.is_regular_file() || entry.path().extension() != ".json")
+			if (!entry.is_regular_file() || entry.path().extension() != PRESET_EXTENSION)
 			{
 				continue;
 			}
-			presets_.emplace(entry.path().stem());
+			const std::string name = entry.path().stem().string();
+			presets_.emplace(name, Preset{ path_config_presets_, name });
 		}
 	}
 
-	if (!data_.active_preset.empty())
-	{
-		if (!presets_.contains(data_.active_preset))
-		{
-			data_.active_preset = presets_.empty()
-				? ""
-				: *presets_.begin();
-		}
-	}
+	ResolveActivePreset();
 }
 
 Config::~Config()
 {
-	// TODO: we should probably only write when we have to
-	nlohmann::json data_json(data_);
+	if (dirty_)
 	{
-		std::ofstream out(path_config_);
-		out << data_json.dump(4);
+		nlohmann::json data_json(config_);
+		{
+			std::ofstream out(path_config_);
+			out << data_json.dump(4);
+		}
+	}
+}
+
+void Config::ResolveActivePreset()
+{
+	if (data().active_preset.empty())
+	{
+		return;
+	}
+
+	if (!presets_.contains(data().active_preset))
+	{
+		dirty_= true;
+		data().active_preset = presets_.empty()
+			? ""
+			: presets_.begin()->first;
+	}
+}
+
+void Config::SetActivePreset(const std::string& name)
+{
+	release_assert(presets_.contains(name), "preset must exist");
+
+	dirty_ = true;
+	data().active_preset = name;
+}
+
+Preset* Config::FindPreset(const std::string& name)
+{
+	const auto preset = presets_.find(name);
+	return preset == presets_.end()
+		? nullptr
+		: &preset->second;
+}
+
+const Preset* Config::FindPreset(const std::string& name) const
+{
+	const auto preset = presets_.find(name);
+	return preset == presets_.end()
+		? nullptr
+		: &preset->second;
+}
+
+Preset& Config::CreatePreset(const std::string& name, const std::filesystem::path& build_directory)
+{
+	release_assert(!presets_.contains(name), "preset must not already exist");
+	const auto it = presets_.emplace(name, Preset{ path_config_presets_, name, build_directory });
+
+	// If no active preset, we should set new preset as active.
+	if (presets_.size() == 1)
+	{
+		SetActivePreset(name);
+	}
+
+	return it.first->second;
+}
+
+void Config::RemovePreset(const std::string& name)
+{
+	auto preset = presets_.find(name);
+	release_assert(preset != presets_.end(), "preset must exist");
+
+	preset->second.Delete();
+	presets_.erase(preset);
+
+	// If we removed active preset we should set new preset as active.
+	if (name == data().active_preset)
+	{
+		ResolveActivePreset();
 	}
 }

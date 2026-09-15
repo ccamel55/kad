@@ -165,15 +165,15 @@ int main(int argc, char** argv)
 	// TUI
 	// Only launch if we didn't pass any CLI commands
 	{
-		const auto folder = kad::context::FindDataFolder();
-		if (!folder.has_value())
+		const auto root_folder = kad::context::FindRootDirectory();
+		if (!root_folder.has_value())
 		{
 			std::println("could not find kad folder for current project");
 			std::println("use `kad init` to create one");
 			std::abort();
 		}
 
-		kad::context::Context context{ folder.value() };
+		kad::context::Context context{ root_folder.value() };
 
 		const auto index_file = GetReplyIndexFile(RESPONSE_PATH);
 		if (!index_file)
