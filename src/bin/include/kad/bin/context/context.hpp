@@ -15,7 +15,7 @@ namespace kad::context
 		size_t max_depth = 100
 	);
 
-	class Context : public kad::common::NoCopy
+	class Context : public kad::common::NoCopyOrMove
 	{
 	public:
 		explicit Context(const std::filesystem::path& path_root, bool create_if_not_exists = false);

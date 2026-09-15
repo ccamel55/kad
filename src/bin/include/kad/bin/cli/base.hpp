@@ -31,16 +31,82 @@ namespace kad::cli
 		return has_subcommand;
 	}
 
-	class CommandBase
+	// TODO(ALLAN): move this into common
+	template <typename Type>
+	class Lazy
 	{
 	public:
-		CommandBase(CLI::App* parent, CLI::App* command)
-			: parent_{ parent }
-			, command_{ command }
+		constexpr Lazy(std::function<void(std::optional<Type>&)> init)
+			: init_{ std::move(init) }
 		{ }
 
+		constexpr Type* operator->() { TryInit(); return  get(); }
+		constexpr const Type* operator->() const { TryInit(); return get(); }
+
+		constexpr Type& operator*() { TryInit(); return value_.value(); }
+		constexpr const Type& operator*() const { TryInit(); return value_.value(); }
+
+		constexpr Type* get() { TryInit(); return std::addressof(value_.value()); }
+		constexpr const Type* get() const { TryInit(); return std::addressof(value_.value()); }
+
+	private:
+		void TryInit() const
+		{
+			if (value_.has_value()) [[likely]]
+			{
+				return;
+			}
+
+			init_(value_);
+		}
+
+	private:
+		mutable std::function<void(std::optional<Type>&)>	init_;
+		mutable std::optional<Type>							value_;
+
+	};
+
+	struct CommandData { };
+
+	class CommandBase : public common::NoCopyOrMove
+	{
+	public:
+		CommandBase(CommandBase* parent, CLI::App* command)
+			: parent_{ parent }
+			, command_{ command }
+		{
+			command_->callback([this]()
+			{
+				if (AppHasSubcommand(command_))
+				{
+					return;
+				}
+				this->HandleCommandImpl();
+			});
+		}
+
+		virtual ~CommandBase() = default;
+
+		CLI::App* Command() { return command_; }
+		const CLI::App* Command() const { return command_; }
+
+		CommandBase* Parent() { return parent_; }
+		const CommandBase* Parent() const { return parent_; }
+
+		virtual CommandData* Data() { return nullptr; }
+		virtual const CommandData* Data() const { return nullptr; }
+
+		template <typename DerivedType> requires std::derived_from<DerivedType, CommandData>
+		DerivedType* DataAs() { return Data() ? static_cast<DerivedType*>(Data()): nullptr; }
+
+		template <typename DerivedType> requires std::derived_from<DerivedType, CommandData>
+		const DerivedType* DataAs() const { return Data() ? static_cast<const DerivedType*>(Data()): nullptr; }
+
 	protected:
-		CLI::App* parent_;
+		virtual void HandleCommandImpl() = 0;
+
+	private:
+		CommandBase* parent_;
 		CLI::App* command_;
 
 	};

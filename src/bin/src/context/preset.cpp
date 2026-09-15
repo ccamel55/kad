@@ -1,3 +1,4 @@
+#include <kad/bin/context/config.hpp>
 #include <kad/bin/context/preset.hpp>
 #include <kad/common/release_assert.hpp>
 
@@ -116,17 +117,19 @@ struct nlohmann::adl_serializer<kad::context::config::Preset>
 	}
 };
 
-Preset::Preset(const std::filesystem::path& path_presets, const std::string& name)
-	: path_preset_file_{ path_presets / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
-	, path_preset_folder_{ path_presets / name }
+Preset::Preset(Config& config, const std::string& name)
+	: config_{ config }
+	, path_preset_file_{ config.path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
+	, path_preset_folder_{ config.path_config_presets() / name }
 {
 	release_assert(std::filesystem::is_regular_file(path_preset_file_), "preset file must exist");
 	release_assert(std::filesystem::is_directory(path_preset_folder_), "preset folder must exist");
 }
 
-Preset::Preset(const std::filesystem::path& path_presets, const std::string& name, const std::filesystem::path& build_directory)
-	: path_preset_file_{ path_presets / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
-	, path_preset_folder_{ path_presets / name }
+Preset::Preset(Config& config, const std::string& name, const std::filesystem::path& build_directory)
+	: config_{ config }
+	, path_preset_file_{ config.path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
+	, path_preset_folder_{ config.path_config_presets() / name }
 	, preset_{ std::make_optional(config::Preset{
 		.build_directory = build_directory
 	})}

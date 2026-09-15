@@ -1,4 +1,5 @@
 #include <kad/bin/context/config.hpp>
+#include <kad/bin/context/context.hpp>
 #include <kad/common/release_assert.hpp>
 
 #include <nlohmann/json.hpp>
@@ -21,6 +22,17 @@ namespace
 	{
 
 	}
+
+	std::filesystem::path ResolvePath(
+		const std::filesystem::path& path,
+		const std::filesystem::path& base
+	)
+	{
+		const auto rel = std::filesystem::relative(path, base);
+		const auto is_relative = !rel.empty() && rel.native()[0] != '.';
+
+		return is_relative ? rel : std::filesystem::absolute(path);
+	}
 }
 
 template <>
@@ -41,9 +53,10 @@ struct nlohmann::adl_serializer<kad::context::config::Config>
 	}
 };
 
-Config::Config(const std::filesystem::path& path_kad)
-	: path_config_{ path_kad / KAD_CONFIG }
-	, path_config_presets_{ path_kad / KAD_PRESETS }
+Config::Config(Context& context)
+	: context_{ context }
+	, path_config_{ context_.path_kad_folder() / KAD_CONFIG }
+	, path_config_presets_{ context_.path_kad_folder() / KAD_PRESETS }
 {
 	if (!std::filesystem::is_regular_file(path_config_))
 	{
@@ -89,7 +102,11 @@ Config::Config(const std::filesystem::path& path_kad)
 				continue;
 			}
 			const std::string name = entry.path().stem().string();
-			presets_.emplace(name, Preset{ path_config_presets_, name });
+			presets_.emplace(
+				std::piecewise_construct,
+				std::forward_as_tuple(name),
+				std::forward_as_tuple(*this, name)
+			);
 		}
 	}
 
@@ -151,7 +168,15 @@ const Preset* Config::FindPreset(const std::string& name) const
 Preset& Config::CreatePreset(const std::string& name, const std::filesystem::path& build_directory)
 {
 	release_assert(!presets_.contains(name), "preset must not already exist");
-	const auto it = presets_.emplace(name, Preset{ path_config_presets_, name, build_directory });
+
+	const auto build_dir_abs = std::filesystem::absolute(build_directory);
+	const auto build_dir_parsed = ResolvePath(build_dir_abs, context_.path_root());
+
+	const auto it = presets_.emplace(
+		std::piecewise_construct,
+		std::forward_as_tuple(name),
+		std::forward_as_tuple(*this, name, build_dir_parsed)
+	);
 
 	// If no active preset, we should set new preset as active.
 	if (presets_.size() == 1)
@@ -164,11 +189,16 @@ Preset& Config::CreatePreset(const std::string& name, const std::filesystem::pat
 
 void Config::RemovePreset(const std::string& name)
 {
-	auto preset = presets_.find(name);
-	release_assert(preset != presets_.end(), "preset must exist");
+	RemovePreset(presets_.find(name));
+}
 
-	preset->second.Delete();
-	presets_.erase(preset);
+void Config::RemovePreset(Config::PresetMap::iterator it)
+{
+	release_assert(it != presets_.end(), "preset must exist");
+	const auto name = it->first;
+
+	it->second.Delete();
+	presets_.erase(it);
 
 	// If we removed active preset we should set new preset as active.
 	if (name == data().active_preset)

@@ -25,11 +25,13 @@ namespace kad::context
 		};
 	}
 
-	class Preset : public common::NoCopy
+	class Config;
+
+	class Preset : public common::NoCopyOrMove
 	{
 	public:
-		Preset(const std::filesystem::path& path_presets, const std::string& name);
-		Preset(const std::filesystem::path& path_presets, const std::string& name, const std::filesystem::path& build_directory);
+		Preset(Config& config, const std::string& name);
+		Preset(Config& config, const std::string& name, const std::filesystem::path& build_directory);
 
 		~Preset();
 
@@ -42,12 +44,20 @@ namespace kad::context
 		[[nodiscard]] bool HasApiRequest() const;
 		[[nodiscard]] bool HasApiResponse() const;
 
+		[[nodiscard]] Config& config() { return config_; }
+		[[nodiscard]] const Config& config() const { return config_; }
+
+		[[nodiscard]] const std::filesystem::path& path_preset_file() const { return path_preset_file_; }
+		[[nodiscard]] const std::filesystem::path& path_preset_folder() const { return path_preset_folder_; }
+
 		[[nodiscard]] const config::Preset& data() const { TryLoadPreset(); return preset_.value(); }
 
 	private:
 		void TryLoadPreset() const;
 
 	private:
+		Config& config_;
+
 		bool dirty_{ false };
 		bool delete_{ false };
 

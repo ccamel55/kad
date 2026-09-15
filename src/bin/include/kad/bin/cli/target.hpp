@@ -8,22 +8,26 @@ namespace kad::cli
 	class CommandTarget final : public CommandBase
 	{
 	public:
-		struct State
+		struct Data : public CommandData
 		{
-			std::string preset;
-			std::string target;
+			Lazy<context::Context> context;
+
+			std::string preset{ };
+			std::string target{ };
 		};
 
 		explicit CommandTarget(CLI::App* parent);
 
-	private:
-		void HandleCommand();
+		CommandData* Data() override { return &data_; }
+		const CommandData* Data() const override { return &data_; }
+
+	protected:
+		void HandleCommandImpl() override;
 
 	private:
-		std::optional<context::Context> context_;
+		struct Data data_;
 
-		State state_;
-		std::vector<std::unique_ptr<CommandBase>> commands_;
-
+		std::unique_ptr<CommandBase> cmd_build;
+		std::unique_ptr<CommandBase> cmd_build_and_run;
 	};
 }

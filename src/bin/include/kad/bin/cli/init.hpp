@@ -9,18 +9,21 @@ namespace kad::cli
 	class CommandInit final : public CommandBase
 	{
 	public:
-		struct State
+		struct Data : public CommandData
 		{
 			std::filesystem::path root;
 		};
 
 		explicit CommandInit(CLI::App* parent);
 
-	private:
-		void HandleCommand();
+		CommandData* Data() override { return &data_; }
+		const CommandData* Data() const override { return &data_; }
+
+	protected:
+		void HandleCommandImpl() override;
 
 	private:
-		State state_;
+		struct Data data_;
 
 	};
 }

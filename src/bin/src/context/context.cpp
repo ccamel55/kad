@@ -1,5 +1,7 @@
 #include <kad/bin/context/context.hpp>
 
+#include <print>
+
 using namespace kad::context;
 
 namespace
@@ -53,7 +55,5 @@ std::optional<std::filesystem::path> kad::context::FindRootDirectory(
 Context::Context(const std::filesystem::path& path_root, bool create_if_not_exists)
 	: path_root_{ path_root }
 	, path_kad_{ GetPathSafe(path_root_ / KAD_FOLDER, create_if_not_exists) }
-	, config_{ path_kad_ }
-{
-
-}
+	, config_{ *this }
+{ }

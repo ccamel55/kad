@@ -10,136 +10,116 @@ namespace
 	class SubCommandBuild final : public CommandBase
 	{
 	public:
-		SubCommandBuild(
-			const CommandTarget::State& parent_state,
-			const std::optional<kad::context::Context>& context,
-			CLI::App* parent,
-			CLI::Option* option_name
-		)
+		explicit SubCommandBuild(CommandBase* parent)
 			: CommandBase{
 				parent,
-				parent->add_subcommand(
+				parent->Command()->add_subcommand(
 					"build",
 					"Build target"
 				)
 			}
-			, parent_state_{ parent_state }
 		{
-			command_->needs(option_name);
-			command_->alias("b");
-			command_->require_subcommand(0);
-			command_->subcommand_fallthrough(false);
+			Command()->alias("b");
+			Command()->require_subcommand(0);
+			Command()->subcommand_fallthrough(false);
+		}
 
-			command_->callback([this]() { this->HandleCommand(); });
+	protected:
+		void HandleCommandImpl()
+		{
+			const auto* parent_data = Parent()->DataAs<struct CommandTarget::Data>();
+			std::println("Handled target->build command preset({}) target({})", parent_data->preset, parent_data->target);
 		}
 
 	private:
-		void HandleCommand()
-		{
-			std::println("Handled target->build command preset({}) target({})", parent_state_.preset, parent_state_.target);
-		}
-
-	private:
-		const CommandTarget::State& parent_state_;
 
 	};
 
 	class SubCommandBuildAndRun final : public CommandBase
 	{
 	public:
-		struct State
+		struct Data : public CommandData
 		{
-			bool debug;
-			std::vector<std::string> args;
+			bool debug{ false };
+			std::vector<std::string> args{ };
 		};
 
-		SubCommandBuildAndRun(
-			const CommandTarget::State& parent_state,
-			const std::optional<kad::context::Context>& context,
-			CLI::App* parent,
-			CLI::Option* option_name
-		)
+		explicit SubCommandBuildAndRun(CommandBase* parent)
 			: CommandBase{
 				parent,
-				parent->add_subcommand(
+				parent->Command()->add_subcommand(
 					"run",
 					"Build and run target"
 				)
 			}
-			, parent_state_{ parent_state }
 		{
-			command_->needs(option_name);
-			command_->alias("r");
-			command_->require_subcommand(0);
-			command_->subcommand_fallthrough(false);
+			Command()->alias("r");
+			Command()->require_subcommand(0);
+			Command()->subcommand_fallthrough(false);
 
-			command_
-				->add_option("--debug", state_.debug, "Send SIGSTOP upon starting to give us time for the debugger to attach")
+			Command()
+				->add_option("--debug", data_.debug, "Send SIGSTOP upon starting to give us time for the debugger to attach")
 				->required(false);
 
-			command_
-				->add_option("--args", state_.args, " Arguments to be passed to executable, will override any default arguments")
+			Command()
+				->add_option("--args", data_.args, " Arguments to be passed to executable, will override any default arguments")
 				->required(false);
-
-			command_->callback([this]() { this->HandleCommand(); });
 		}
 
-	private:
-		void HandleCommand()
+		CommandData* Data() override { return &data_; }
+		const CommandData* Data() const override { return &data_; }
+
+	protected:
+		void HandleCommandImpl() override
 		{
+			const auto* parent_data = Parent()->DataAs<struct CommandTarget::Data>();
 			std::println(
 				"Handled target->run command preset({}) target({}) debug({}) args({})",
-				parent_state_.preset,
-				parent_state_.target,
-				state_.debug,
-				kad::common::FmtIterable{ state_.args }
+				parent_data->preset,
+				parent_data->target,
+				data_.debug,
+				kad::common::FmtIterable{ data_.args }
 			);
 		}
 
 	private:
-		const CommandTarget::State& parent_state_;
-		State state_;
+		struct Data data_;
 
 	};
 }
 
 CommandTarget::CommandTarget(CLI::App* parent)
 	: CommandBase{
-		parent,
+		nullptr,
 		parent->add_subcommand(
 			"target",
 			"Manage CMake targets"
 		)
 	}
+	, data_{
+			.context = { [](auto& x){ x.emplace(FindRootFolderOrThrow()); } }
+	}
 {
-	command_->alias("t");
-	command_->require_subcommand(0);
-	command_->subcommand_fallthrough(false);
+	Command()->alias("t");
+	Command()->require_subcommand(0);
+	Command()->subcommand_fallthrough(false);
 
-	command_
-		->add_option("-p,--preset", state_.preset, "CMake preset to use. Will take precidence over active preset.")
+	auto preset = Command()
+		->add_option("-p,--preset", data_.preset, "CMake preset to use. Will take precidence over active preset.")
 		->required(false);
 
-	auto target = command_
-		->add_option("target", state_.target, "Target name")
+	auto target = Command()
+		->add_option("target", data_.target, "Target name")
 		->required(false);
 
-	commands_.emplace_back(std::make_unique<SubCommandBuild>(state_, context_, command_, target));
-	commands_.emplace_back(std::make_unique<SubCommandBuildAndRun>(state_, context_, command_, target));
+	cmd_build = std::make_unique<SubCommandBuild>(this);
+	cmd_build_and_run = std::make_unique<SubCommandBuildAndRun>(this);
 
-	command_->callback([this]()
-	{
-		context_.emplace(FindRootFolderOrThrow());
-
-		if (AppHasSubcommand(command_))
-		{
-			return;
-		}
-		this->HandleCommand();
-	});
+	cmd_build->Command()->needs(target);
+	cmd_build_and_run->Command()->needs(target);
 }
 
-void CommandTarget::HandleCommand()
+void CommandTarget::HandleCommandImpl()
 {
-	std::println("Handled target command: preset({}) name({})", state_.preset, state_.target);
+	std::println("Handled target command: preset({}) name({})", data_.preset, data_.target);
 }
