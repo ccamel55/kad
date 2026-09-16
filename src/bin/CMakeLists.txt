@@ -11,6 +11,8 @@ add_executable(
 		src/context/config.cpp
 		src/context/context.cpp
 		src/context/preset.cpp
+		src/process/cmake.cpp
+		src/process/target.cpp
 )
 
 target_include_directories(
@@ -25,7 +27,6 @@ target_link_libraries(
 			CLI11::CLI11
 			ftxui::ftxui
 			rapidfuzz::rapidfuzz
-			reproc::reproc
 			spdlog::spdlog
 			kad::common
 			kad::model

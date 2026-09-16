@@ -1,4 +1,6 @@
 #include <kad/bin/cli/preset.hpp>
+#include <kad/bin/process/cmake.hpp>
+
 #include <kad/common/release_assert.hpp>
 
 #include <print>
@@ -7,6 +9,28 @@ using namespace kad::cli;
 
 namespace
 {
+	class CMake
+	{
+	public:
+		explicit CMake(const std::filesystem::path& path_cmake = "cmake")
+			: path_cmake_{ path_cmake }
+		{ }
+
+		void Configure()
+		{
+
+		}
+
+		void Build()
+		{
+
+		}
+
+	private:
+		std::filesystem::path path_cmake_;
+
+	};
+
 	class SubCommandActive final : public CommandBase
 	{
 	public:
@@ -62,8 +86,46 @@ namespace
 	protected:
 		void HandleCommandImpl() override
 		{
-			const auto* parent_data = Parent()->DataAs<struct CommandPreset::Data>();
-			std::println("Handled preset->configure command preset({})", parent_data->preset);
+			auto* parent_data = Parent()->DataAs<struct CommandPreset::Data>();
+			auto& config = parent_data->context->config();
+
+			const auto& preset = parent_data->preset.empty()
+				? config.data().active_preset
+				: parent_data->preset;
+
+			auto it = config.presets().find(preset);
+			if (it == config.presets().end())
+			{
+				std::println("Preset({}) does not exists", parent_data->preset);
+				return;
+			}
+
+			kad::process::CMake cmake{ };
+			auto handle = cmake.Configue({
+				.cmake_root = config.context().path_root(),
+				.build_directory = it->second.DataBuildDirectory(),
+				.preset = preset
+			});
+
+			if (!handle.has_value())
+			{
+				std::println("{}", handle.error());
+				return;
+			}
+
+			const auto result = kad::common::WaitUntilExit(*handle.value(), true, true, [](
+				const kad::common::Process::Output output,
+				const std::string& data
+			)
+			{
+				std::ignore = output;
+				std::print("{}", data);
+			});
+
+			if (result != 0)
+			{
+				std::println("Program exited with code: {}", result);
+			}
 		}
 
 	};
@@ -108,8 +170,14 @@ namespace
 				return;
 			}
 
-			config.CreatePreset(parent_data->preset, data_.build_directory);
-			std::println("Added preset({}) with build_directory({})", parent_data->preset, data_.build_directory.string());
+			auto& preset = config.CreatePreset(parent_data->preset, data_.build_directory);
+			std::println("Added preset({}) with build_directory({})", parent_data->preset, preset.DataBuildDirectory().string());
+
+			if (!preset.HasApiRequest())
+			{
+				preset.CreateApiRequest();
+				std::println("Created API request, please reconfigure the preset");
+			}
 		}
 
 	protected:
@@ -208,6 +276,6 @@ void CommandPreset::HandleCommandImpl()
 
 		std::println("Preset: '{}'", data_.preset);
 		std::println("\t- active: {}", config.data().active_preset == data_.preset);
-		std::println("\t- {}: '{}'", context::config::Preset::Name::BUILD_DIRECTORY, preset->data().build_directory.string());
+		std::println("\t- {}: '{}'", context::config::Preset::Name::BUILD_DIRECTORY, preset->DataBuildDirectory().string());
 	}
 }

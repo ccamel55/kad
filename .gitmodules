@@ -16,9 +16,9 @@
 [submodule "thirdparty/FTXUI"]
 	path = thirdparty/FTXUI
 	url = git@github.com:ArthurSonzogni/FTXUI.git
-[submodule "thirdparty/reproc"]
-	path = thirdparty/reproc
-	url = git@github.com:daandemeyer/reproc.git
 [submodule "thirdparty/spdlog"]
 	path = thirdparty/spdlog
 	url = git@github.com:gabime/spdlog.git
+[submodule "thirdparty/subprocess.h"]
+	path = thirdparty/subprocess.h
+	url = git@github.com:sheredom/subprocess.h.git

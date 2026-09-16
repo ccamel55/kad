@@ -1,4 +1,5 @@
 #include <kad/bin/context/config.hpp>
+#include <kad/bin/context/context.hpp>
 #include <kad/bin/context/preset.hpp>
 #include <kad/common/release_assert.hpp>
 
@@ -97,6 +98,17 @@ namespace
 
 		return std::make_optional(std::filesystem::absolute(path) / reply_file_name);
 	}
+
+	std::filesystem::path ResolvePath(
+		const std::filesystem::path& path,
+		const std::filesystem::path& base
+	)
+	{
+		const auto rel = std::filesystem::relative(std::filesystem::absolute(path), base);
+		const auto is_relative = !rel.empty() && rel.native()[0] != '.';
+
+		return is_relative ? rel : std::filesystem::absolute(path);
+	}
 }
 
 template <>
@@ -131,7 +143,8 @@ Preset::Preset(Config& config, const std::string& name, const std::filesystem::p
 	, path_preset_file_{ config.path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
 	, path_preset_folder_{ config.path_config_presets() / name }
 	, preset_{ std::make_optional(config::Preset{
-		.build_directory = build_directory
+		.build_directory = ResolvePath(build_directory, config.context().path_root())
+
 	})}
 {
 	release_assert(!std::filesystem::is_regular_file(path_preset_file_), "preset file must not exist");
@@ -175,7 +188,7 @@ void Preset::Delete()
 
 void Preset::CreateApiRequest()
 {
-	const auto api_request_folder = data().build_directory / PATH_FILE_API_REQUEST;
+	const auto api_request_folder = DataBuildDirectory() / PATH_FILE_API_REQUEST;
 	const auto api_request = ApiRequest();
 
 	// If build directory does not exist, create it so we can add our API request.
@@ -190,13 +203,13 @@ void Preset::CreateApiRequest()
 
 bool Preset::HasApiRequest() const
 {
-	const auto api_request_file = data().build_directory / PATH_FILE_API_REQUEST / API_REQUEST_FILENAME;
+	const auto api_request_file = DataBuildDirectory() / PATH_FILE_API_REQUEST / API_REQUEST_FILENAME;
 	return std::filesystem::exists(api_request_file) && std::filesystem::is_regular_file(api_request_file);
 }
 
 bool Preset::HasApiResponse() const
 {
-	const auto api_response_folder = data().build_directory / PATH_FILE_API_RESPONSE;
+	const auto api_response_folder = DataBuildDirectory() / PATH_FILE_API_RESPONSE;
 	if (!std::filesystem::exists(api_response_folder) || !std::filesystem::is_directory(api_response_folder))
 	{
 		return false;
@@ -229,4 +242,10 @@ void Preset::TryLoadPreset() const
 
 		ApplyMigration();
 	}
+}
+
+[[nodiscard]] std::filesystem::path Preset::DataBuildDirectory() const
+{
+	const auto& build_dir = data().build_directory;
+	return build_dir.is_absolute() ? build_dir : config().context().path_root() / build_dir;
 }

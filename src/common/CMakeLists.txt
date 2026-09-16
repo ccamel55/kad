@@ -17,6 +17,7 @@ target_link_libraries(
 	${PROJECT_NAME}
 		PUBLIC
 			magic_enum::magic_enum
+			subprocess::subprocess
 )
 
 if(BUILD_TESTS)

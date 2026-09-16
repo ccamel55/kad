@@ -23,16 +23,7 @@ namespace
 
 	}
 
-	std::filesystem::path ResolvePath(
-		const std::filesystem::path& path,
-		const std::filesystem::path& base
-	)
-	{
-		const auto rel = std::filesystem::relative(path, base);
-		const auto is_relative = !rel.empty() && rel.native()[0] != '.';
 
-		return is_relative ? rel : std::filesystem::absolute(path);
-	}
 }
 
 template <>
@@ -169,13 +160,10 @@ Preset& Config::CreatePreset(const std::string& name, const std::filesystem::pat
 {
 	release_assert(!presets_.contains(name), "preset must not already exist");
 
-	const auto build_dir_abs = std::filesystem::absolute(build_directory);
-	const auto build_dir_parsed = ResolvePath(build_dir_abs, context_.path_root());
-
 	const auto it = presets_.emplace(
 		std::piecewise_construct,
 		std::forward_as_tuple(name),
-		std::forward_as_tuple(*this, name, build_dir_parsed)
+		std::forward_as_tuple(*this, name, build_directory)
 	);
 
 	// If no active preset, we should set new preset as active.

@@ -1,10 +1,4 @@
-#include <expected>
-#include <filesystem>
-#include <fstream>
-#include <print>
-
 #include <CLI/CLI.hpp>
-#include <reproc++/reproc.hpp>
 
 #include <kad/bin/target.hpp>
 
@@ -21,7 +15,14 @@
 #include <kad/model/reply/codemodel_fmt.hpp>
 #include <kad/model/reply/codemodel_json.hpp>
 
+#include <kad/common/process.hpp>
+#include <kad/common/string.hpp>
 #include <kad/common/version.hpp>
+
+#include <expected>
+#include <filesystem>
+#include <fstream>
+#include <print>
 
 namespace
 {

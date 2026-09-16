@@ -23,6 +23,7 @@ TODO:
 - look at adding support for parsing and displaying test results from all the big test frameworks
 - things like target names should support glob pattern
 - when TUI is open it should watch for changes to CMakeLists.txt and notify
+- add integration tests/unit tests for the actual CLI application
 
 ## Actions
 

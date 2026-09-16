@@ -1,7 +1,5 @@
 #include <kad/bin/context/context.hpp>
 
-#include <print>
-
 using namespace kad::context;
 
 namespace

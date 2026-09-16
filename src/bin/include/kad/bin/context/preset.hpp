@@ -50,10 +50,13 @@ namespace kad::context
 		[[nodiscard]] const std::filesystem::path& path_preset_file() const { return path_preset_file_; }
 		[[nodiscard]] const std::filesystem::path& path_preset_folder() const { return path_preset_folder_; }
 
-		[[nodiscard]] const config::Preset& data() const { TryLoadPreset(); return preset_.value(); }
+	public:
+		[[nodiscard]] std::filesystem::path DataBuildDirectory() const;
 
 	private:
 		void TryLoadPreset() const;
+
+		[[nodiscard]] const config::Preset& data() const { TryLoadPreset(); return preset_.value(); }
 
 	private:
 		Config& config_;

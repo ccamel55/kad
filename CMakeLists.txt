@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.26)
 
 project(kad-cli LANGUAGES CXX)
 
+if (WIN32)
+	message(FATAL_ERROR "Windows is not supported.")
+endif ()
+
 # Needed for Clangd.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
