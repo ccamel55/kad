@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 namespace kad::process
 {
@@ -16,11 +17,15 @@ namespace kad::process
 			std::filesystem::path build_directory;
 
 			std::string preset;
+			std::vector<std::string> cmake_args{ };
 		};
 
 		struct ParamsBuild
 		{
+			std::filesystem::path build_directory;
 
+			std::string target;
+			std::vector<std::string> cmake_args{ };
 		};
 
 		explicit CMake(const std::filesystem::path& cmake = "cmake")

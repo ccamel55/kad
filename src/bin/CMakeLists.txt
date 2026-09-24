@@ -8,9 +8,6 @@ add_executable(
 		src/cli/preset.cpp
 		src/cli/target.cpp
 		src/tui/tui.cpp
-		src/context/config.cpp
-		src/context/context.cpp
-		src/context/preset.cpp
 		src/process/cmake.cpp
 		src/process/target.cpp
 )
@@ -29,5 +26,6 @@ target_link_libraries(
 			rapidfuzz::rapidfuzz
 			spdlog::spdlog
 			kad::common
+			kad::lib
 			kad::model
 )

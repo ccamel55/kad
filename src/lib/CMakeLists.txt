@@ -1,10 +1,11 @@
-project(common)
+project(lib)
 
 add_library(
 	${PROJECT_NAME}
-		src/file.cpp
-		src/process.cpp
-		src/string.cpp
+		src/config.cpp
+		src/context.cpp
+		src/preset.cpp
+		src/target.cpp
 )
 
 add_library(kad::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
@@ -18,20 +19,18 @@ target_include_directories(
 target_link_libraries(
 	${PROJECT_NAME}
 		PUBLIC
-			magic_enum::magic_enum
-			nlohmann_json::nlohmann_json
-			subprocess::subprocess
+			rapidfuzz::rapidfuzz
+			kad::common
+			kad::model
 )
 
 if(BUILD_TESTS)
 		add_executable(
 			${PROJECT_NAME}-test
-				test/test_bitflag.cpp
-				test/test_file.cpp
-				test/test_process.cpp
-				test/test_scope_exit.cpp
-				test/test_string.cpp
-				test/test_version.cpp
+				test/test_config.cpp
+				test/test_context.cpp
+				test/test_preset.cpp
+				test/test_target.cpp
 		)
 
 		target_link_libraries(

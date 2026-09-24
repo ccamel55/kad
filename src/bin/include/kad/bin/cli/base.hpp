@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kad/bin/context/context.hpp>
+#include <kad/lib/context.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -12,7 +12,7 @@ namespace kad::cli
 		size_t max_depth = 100
 	)
 	{
-		const auto path = context::FindRootDirectory(cwd, max_depth);
+		const auto path = lib::FindRootDirectory(cwd, max_depth);
 		if (!path.has_value()) [[unlikely]]
 		{
 			throw CLI::ValidationError("Could not find root folder for current project");
@@ -30,41 +30,6 @@ namespace kad::cli
 
 		return has_subcommand;
 	}
-
-	// TODO(ALLAN): move this into common
-	template <typename Type>
-	class Lazy
-	{
-	public:
-		constexpr Lazy(std::function<void(std::optional<Type>&)> init)
-			: init_{ std::move(init) }
-		{ }
-
-		constexpr Type* operator->() { TryInit(); return  get(); }
-		constexpr const Type* operator->() const { TryInit(); return get(); }
-
-		constexpr Type& operator*() { TryInit(); return value_.value(); }
-		constexpr const Type& operator*() const { TryInit(); return value_.value(); }
-
-		constexpr Type* get() { TryInit(); return std::addressof(value_.value()); }
-		constexpr const Type* get() const { TryInit(); return std::addressof(value_.value()); }
-
-	private:
-		void TryInit() const
-		{
-			if (value_.has_value()) [[likely]]
-			{
-				return;
-			}
-
-			init_(value_);
-		}
-
-	private:
-		mutable std::function<void(std::optional<Type>&)>	init_;
-		mutable std::optional<Type>							value_;
-
-	};
 
 	struct CommandData { };
 

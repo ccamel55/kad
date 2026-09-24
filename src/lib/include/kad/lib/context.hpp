@@ -1,12 +1,12 @@
 #pragma once
 
-#include <kad/bin/context/config.hpp>
+#include <kad/lib/config.hpp>
 #include <kad/common/no_copy_or_move.hpp>
 
 #include <filesystem>
 #include <optional>
 
-namespace kad::context
+namespace kad::lib
 {
 	/// Recursively search the current working directory and it's parents to find
 	/// the root directory.
@@ -18,7 +18,7 @@ namespace kad::context
 	class Context : public kad::common::NoCopyOrMove
 	{
 	public:
-		explicit Context(const std::filesystem::path& path_root, bool create_if_not_exists = false);
+		Context(const std::filesystem::path& path_root, bool create_if_not_exists = false);
 
 		[[nodiscard]] Config& config() { return config_; }
 		[[nodiscard]] const Config& config() const { return config_; }

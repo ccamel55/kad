@@ -1,12 +1,13 @@
-#include <kad/bin/context/config.hpp>
-#include <kad/bin/context/context.hpp>
+#include <kad/lib/config.hpp>
+#include <kad/lib/context.hpp>
+
 #include <kad/common/release_assert.hpp>
 
 #include <nlohmann/json.hpp>
 
 #include <fstream>
 
-using namespace kad::context;
+using namespace kad::lib;
 
 namespace
 {
@@ -22,14 +23,12 @@ namespace
 	{
 
 	}
-
-
 }
 
 template <>
-struct nlohmann::adl_serializer<kad::context::config::Config>
+struct nlohmann::adl_serializer<kad::lib::config::Config>
 {
-	using Type = kad::context::config::Config;
+	using Type = kad::lib::config::Config;
 
 	static void from_json(const json& json, Type& object)
 	{
@@ -52,7 +51,7 @@ Config::Config(Context& context)
 	if (!std::filesystem::is_regular_file(path_config_))
 	{
 		// Create root config file if it doesn't exist
-		nlohmann::json data_json(config_);
+		nlohmann::json data_json(data_.value());
 		{
 			std::ofstream out(path_config_);
 			out << data_json.dump(4);
@@ -62,15 +61,16 @@ Config::Config(Context& context)
 	{
 		// Load existing config file
 		std::ifstream in(path_config_);
-		config_ = nlohmann::json::parse(in).get<config::Config>();
+		data_ = nlohmann::json::parse(in).get<config::Config>();
+		data_.SetClean();
 
-		if (config_.revision != config::REVISION) [[unlikely]]
+		if (data_->revision != config::REVISION) [[unlikely]]
 		{
 			if (!CanMigrate())
 			{
 				throw std::runtime_error(std::format(
 					"config revisions incompatible, manual migration required. current_revision({}) config_revision({})",
-					config::REVISION, config_.revision
+					config::REVISION, data_->revision
 				));
 			}
 
@@ -106,9 +106,9 @@ Config::Config(Context& context)
 
 Config::~Config()
 {
-	if (dirty_)
+	if (data_.dirty())
 	{
-		nlohmann::json data_json(config_);
+		nlohmann::json data_json(data_.value());
 		{
 			std::ofstream out(path_config_);
 			out << data_json.dump(4);
@@ -118,15 +118,14 @@ Config::~Config()
 
 void Config::ResolveActivePreset()
 {
-	if (data().active_preset.empty())
+	if (data_->active_preset.empty())
 	{
 		return;
 	}
 
-	if (!presets_.contains(data().active_preset))
+	if (!presets_.contains(data_->active_preset))
 	{
-		dirty_= true;
-		data().active_preset = presets_.empty()
+		data_.mut().active_preset = presets_.empty()
 			? ""
 			: presets_.begin()->first;
 	}
@@ -135,9 +134,7 @@ void Config::ResolveActivePreset()
 void Config::SetActivePreset(const std::string& name)
 {
 	release_assert(presets_.contains(name), "preset must exist");
-
-	dirty_ = true;
-	data().active_preset = name;
+	data_.mut().active_preset = name;
 }
 
 Preset* Config::FindPreset(const std::string& name)
@@ -189,7 +186,7 @@ void Config::RemovePreset(Config::PresetMap::iterator it)
 	presets_.erase(it);
 
 	// If we removed active preset we should set new preset as active.
-	if (name == data().active_preset)
+	if (name == data_->active_preset)
 	{
 		ResolveActivePreset();
 	}

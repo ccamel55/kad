@@ -7,6 +7,9 @@
 
 using namespace kad::cli;
 
+// TODO(ALLAN): allow defining custom params for build
+// TODO(ALLAN): allow defining custom params for configure
+
 namespace
 {
 	class CMake
@@ -276,6 +279,6 @@ void CommandPreset::HandleCommandImpl()
 
 		std::println("Preset: '{}'", data_.preset);
 		std::println("\t- active: {}", config.data().active_preset == data_.preset);
-		std::println("\t- {}: '{}'", context::config::Preset::Name::BUILD_DIRECTORY, preset->DataBuildDirectory().string());
+		std::println("\t- {}: '{}'", lib::config::Preset::Name::BUILD_DIRECTORY, preset->DataBuildDirectory().string());
 	}
 }
