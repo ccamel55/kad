@@ -2,6 +2,7 @@
 
 #include <kad/lib/preset.hpp>
 #include <kad/common/no_copy_or_move.hpp>
+#include <kad/common/tracked.hpp>
 
 #include <filesystem>
 #include <map>
@@ -45,8 +46,7 @@ namespace kad::lib
 		[[nodiscard]] const std::filesystem::path& path_config() const { return path_config_; }
 		[[nodiscard]] const std::filesystem::path& path_config_presets() const { return path_config_presets_; }
 
-		[[nodiscard]] config::Config& data() { return config_; }
-		[[nodiscard]] const config::Config& data() const { return config_; }
+		[[nodiscard]] const config::Config& data() const { return data_.value(); }
 
 		[[nodiscard]] PresetMap& presets() { return presets_; }
 		[[nodiscard]] const PresetMap& presets() const { return presets_; }
@@ -61,12 +61,10 @@ namespace kad::lib
 	private:
 		Context& context_;
 
-		bool dirty_{ false };
-
 		std::filesystem::path path_config_;
 		std::filesystem::path path_config_presets_;
 
-		mutable config::Config config_;
+		mutable common::Tracked<config::Config> data_;
 
 		PresetMap presets_;
 	};

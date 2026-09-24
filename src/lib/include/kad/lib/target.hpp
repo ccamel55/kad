@@ -3,6 +3,8 @@
 #include <kad/common/bit_flag.hpp>
 #include <kad/common/no_copy_or_move.hpp>
 
+#include <kad/model/reply/target.hpp>
+
 #include <filesystem>
 #include <map>
 #include <string>
@@ -33,20 +35,12 @@ namespace kad::lib
 		};
 	}
 
-	enum class TargetType
-	{
-		TARGET,
-		ABSTRACT_TARGET,
-	};
-
 	class Preset;
 
 	class Target : public common::NoCopyOrMove
 	{
 	public:
-		using TargetMap = std::map<std::string, Target>;
-
-		Target(Preset& preset, const std::string& name, const std::filesystem::path& path_target_json, TargetType type);
+		Target(Preset& preset, const std::string& name, const std::filesystem::path& path_target_json);
 		~Target();
 
 		[[nodiscard]] Preset& config() { return preset_; }
@@ -55,15 +49,11 @@ namespace kad::lib
 		[[nodiscard]] const std::filesystem::path& path_target_json() const { return path_target_json_; }
 		[[nodiscard]] const std::filesystem::path& path_target_config() const { return path_target_config_; }
 
-		[[nodiscard]] TargetType type() const { return type_; }
-
 	private:
 		Preset& preset_;
 
 		std::filesystem::path path_target_json_;
 		std::filesystem::path path_target_config_;
-
-		TargetType type_;
 
 	};
 }

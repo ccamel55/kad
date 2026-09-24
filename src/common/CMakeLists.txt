@@ -19,6 +19,7 @@ target_link_libraries(
 	${PROJECT_NAME}
 		PUBLIC
 			magic_enum::magic_enum
+			nlohmann_json::nlohmann_json
 			subprocess::subprocess
 )
 

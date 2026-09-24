@@ -7,6 +7,9 @@
 
 using namespace kad::cli;
 
+// TODO(ALLAN): allow defining custom params for build
+// TODO(ALLAN): allow defining custom params for configure
+
 namespace
 {
 	class CMake

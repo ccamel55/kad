@@ -31,41 +31,6 @@ namespace kad::cli
 		return has_subcommand;
 	}
 
-	// TODO(ALLAN): move this into common
-	template <typename Type>
-	class Lazy
-	{
-	public:
-		constexpr Lazy(std::function<void(std::optional<Type>&)> init)
-			: init_{ std::move(init) }
-		{ }
-
-		constexpr Type* operator->() { TryInit(); return  get(); }
-		constexpr const Type* operator->() const { TryInit(); return get(); }
-
-		constexpr Type& operator*() { TryInit(); return value_.value(); }
-		constexpr const Type& operator*() const { TryInit(); return value_.value(); }
-
-		constexpr Type* get() { TryInit(); return std::addressof(value_.value()); }
-		constexpr const Type* get() const { TryInit(); return std::addressof(value_.value()); }
-
-	private:
-		void TryInit() const
-		{
-			if (value_.has_value()) [[likely]]
-			{
-				return;
-			}
-
-			init_(value_);
-		}
-
-	private:
-		mutable std::function<void(std::optional<Type>&)>	init_;
-		mutable std::optional<Type>							value_;
-
-	};
-
 	struct CommandData { };
 
 	class CommandBase : public common::NoCopyOrMove
