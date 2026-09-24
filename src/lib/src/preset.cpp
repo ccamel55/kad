@@ -106,7 +106,7 @@ std::optional<std::filesystem::path> kad::lib::GetApiReplyFile(const std::filesy
 		return std::nullopt;
 	}
 
-	return std::make_optional(std::filesystem::absolute(path) / reply_file_name);
+	return std::make_optional((std::filesystem::absolute(path) / reply_file_name).replace_extension(".json"));
 }
 
 Preset::Preset(Config& config, const std::string& name)
@@ -212,16 +212,21 @@ bool Preset::HasApiRequest() const
 
 bool Preset::HasApiResponse() const
 {
+	return GetApiResponseFile().has_value();
+}
+
+std::optional<std::filesystem::path> Preset::GetApiResponseFile() const
+{
 	const auto api_response_folder = DataBuildDirectory() / PATH_FILE_API_RESPONSE;
 	if (!std::filesystem::exists(api_response_folder) || !std::filesystem::is_directory(api_response_folder))
 	{
-		return false;
+		return std::nullopt;
 	}
 
-	return GetApiReplyFile(api_response_folder).has_value();
+	return GetApiReplyFile(api_response_folder);
 }
 
-[[nodiscard]] std::filesystem::path Preset::DataBuildDirectory() const
+std::filesystem::path Preset::DataBuildDirectory() const
 {
 	const auto& build_dir = data().build_directory;
 	return build_dir.is_absolute() ? build_dir : config().context().path_root() / build_dir;

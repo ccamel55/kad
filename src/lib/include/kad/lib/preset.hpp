@@ -52,6 +52,8 @@ namespace kad::lib
 		[[nodiscard]] bool HasApiRequest() const;
 		[[nodiscard]] bool HasApiResponse() const;
 
+		[[nodiscard]] std::optional<std::filesystem::path> GetApiResponseFile() const;
+
 		[[nodiscard]] Config& config() { return config_; }
 		[[nodiscard]] const Config& config() const { return config_; }
 

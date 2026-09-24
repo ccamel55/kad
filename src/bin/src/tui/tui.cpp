@@ -18,9 +18,7 @@ void Tui::RunBlocking()
 	auto screen = ftxui::App::Fullscreen();
 	screen.TrackMouse(false);
 
-	auto entries = data_.targets
-		| std::ranges::views::transform([](const auto& target){ return target.name; })
-		| std::ranges::to<std::vector>();
+	auto entries = data_.targets | std::ranges::to<std::vector<std::string>>();
 
 	std::string search;
 	std::optional<rapidfuzz::fuzz::CachedRatio<std::string::value_type>> scorer;
@@ -48,9 +46,7 @@ void Tui::RunBlocking()
 			if (search.empty())
 			{
 				scorer.reset();
-				entries = data_.targets
-					| std::ranges::views::transform([](const auto& target){ return target.name; })
-					| std::ranges::to<std::vector>();
+				entries = data_.targets | std::ranges::to<std::vector<std::string>>();
 			}
 			else
 			{
@@ -60,7 +56,7 @@ void Tui::RunBlocking()
 				std::vector<std::pair<std::string, double>> results;
 				for (const auto& target: data_.targets)
 				{
-					const auto name_lower = target.name
+					const auto name_lower = target
 						| std::ranges::views::transform([](char c){ return std::tolower(c); })
 						| std::ranges::to<std::string>();
 
@@ -70,7 +66,7 @@ void Tui::RunBlocking()
 						continue;
 					}
 
-					auto entry = std::make_pair(target.name, score);
+					auto entry = std::make_pair(target, score);
 					results.insert(
 						std::ranges::lower_bound(results, entry, [](const auto& a, const auto& b){ return a.second > b.second; }),
 						std::move(entry)

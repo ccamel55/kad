@@ -1,11 +1,11 @@
 #include <CLI/CLI.hpp>
 
-#include <kad/bin/target.hpp>
-
 #include <kad/bin/cli/cli.hpp>
 #include <kad/bin/tui/tui.hpp>
 
+#include <kad/lib/config.hpp>
 #include <kad/lib/context.hpp>
+#include <kad/lib/preset.hpp>
 
 #include <kad/model/query/query.hpp>
 #include <kad/model/query/query_fmt.hpp>
@@ -30,49 +30,6 @@ namespace
 
 	template <typename Type>
 	using ResultStr = std::expected<Type, std::string>;
-
-	const std::string_view CLIENT_NAME = "kad";
-	const std::filesystem::path RESPONSE_PATH = "/run/media/allan/external/srcs/kad/build/debug/.cmake/api/v1/reply";
-
-	// TODO(ALLAN): we should really be checking index- and error- files and taking the latest one.
-	// If we have an error file as latest, we should return unexpected with the error.
-	[[nodiscard]] ResultStr<std::filesystem::path> GetReplyIndexFile(const std::filesystem::path& path)
-	{
-		if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path))
-		{
-			return std::unexpected{ std::format("Could not find API resonse at path({})", path.string()) };
-		}
-
-		std::string index_file_name;
-
-		// File with largest lexicographic order is the latest/current file.
-		// Index files allow follow naming: index-{random string}.json
-		for (const auto& entry: std::filesystem::directory_iterator{ path })
-		{
-			if (entry.is_directory())
-			{
-				continue;
-			}
-
-			const auto& entry_path = entry.path();
-			if (!entry_path.stem().string().starts_with("index-") || entry_path.extension().string() != ".json")
-			{
-				continue;
-			}
-
-			if (entry_path.filename().string() > index_file_name)
-			{
-				index_file_name = entry_path.filename().string();
-			}
-		}
-
-		if (index_file_name.empty())
-		{
-			return std::unexpected{ std::format("Could not find API respose index file in path({})", path.string()) };
-		}
-
-		return std::filesystem::absolute(path) / index_file_name;
-	}
 
 	[[nodiscard]] ResultStr<std::filesystem::path> GetCodeModelFile(const std::filesystem::path& index_path, const std::string& client_name)
 	{
@@ -176,17 +133,26 @@ int main(int argc, char** argv)
 
 		kad::lib::Context context{ root_folder.value() };
 
-		const auto index_file = GetReplyIndexFile(RESPONSE_PATH);
-		if (!index_file)
+		const auto& config = context.config();
+		const auto& active_preset = config.data().active_preset;
+		if (active_preset.empty() || !config.FindPreset(active_preset))
 		{
-			std::println("{}", index_file.error());
+			std::println("active_preset({}) does not exist", active_preset);
 			std::abort();
 		}
 
-		std::println("CMake index file: {}", index_file->string());
+		const auto& preset = *config.FindPreset(active_preset);
+		if (!preset.GetApiResponseFile())
+		{
+			std::println("preset({}) missing cmake api response", active_preset);
+			std::abort();
+		}
 
-		const auto codemodel_file = GetCodeModelFile(index_file.value(), std::string(CLIENT_NAME));
-		if (!index_file)
+		const auto index_file = preset.GetApiResponseFile().value();
+		std::println("CMake index file: {}", index_file.string());
+
+		const auto codemodel_file = GetCodeModelFile(index_file, "kad");
+		if (!codemodel_file)
 		{
 			std::println("{}", codemodel_file.error());
 			std::abort();
@@ -210,12 +176,12 @@ int main(int argc, char** argv)
 		{
 			for (const auto& target: configuration.targets)
 			{
-				data.targets.emplace_back(target.name, kad::TargetType::TARGET);
+				data.targets.emplace(target.name);
 			}
 
 			for (const auto& abstract_target: configuration.abstract_targets)
 			{
-				data.targets.emplace_back(abstract_target.name, kad::TargetType::ABSTRACT_TARGET);
+				data.targets.emplace(abstract_target.name);
 			}
 		}
 
