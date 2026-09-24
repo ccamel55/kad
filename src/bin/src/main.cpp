@@ -5,7 +5,7 @@
 #include <kad/bin/cli/cli.hpp>
 #include <kad/bin/tui/tui.hpp>
 
-#include <kad/bin/context/context.hpp>
+#include <kad/lib/context.hpp>
 
 #include <kad/model/query/query.hpp>
 #include <kad/model/query/query_fmt.hpp>
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
 	// TUI
 	// Only launch if we didn't pass any CLI commands
 	{
-		const auto root_folder = kad::context::FindRootDirectory();
+		const auto root_folder = kad::lib::FindRootDirectory();
 		if (!root_folder.has_value())
 		{
 			std::println("could not find kad folder for current project");
@@ -174,7 +174,7 @@ int main(int argc, char** argv)
 			std::abort();
 		}
 
-		kad::context::Context context{ root_folder.value() };
+		kad::lib::Context context{ root_folder.value() };
 
 		const auto index_file = GetReplyIndexFile(RESPONSE_PATH);
 		if (!index_file)

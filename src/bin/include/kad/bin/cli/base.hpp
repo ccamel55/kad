@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kad/bin/context/context.hpp>
+#include <kad/lib/context.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -12,7 +12,7 @@ namespace kad::cli
 		size_t max_depth = 100
 	)
 	{
-		const auto path = context::FindRootDirectory(cwd, max_depth);
+		const auto path = lib::FindRootDirectory(cwd, max_depth);
 		if (!path.has_value()) [[unlikely]]
 		{
 			throw CLI::ValidationError("Could not find root folder for current project");

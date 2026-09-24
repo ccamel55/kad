@@ -1,12 +1,12 @@
 #pragma once
 
-#include <kad/bin/context/preset.hpp>
+#include <kad/lib/preset.hpp>
 #include <kad/common/no_copy_or_move.hpp>
 
 #include <filesystem>
 #include <map>
 
-namespace kad::context
+namespace kad::lib
 {
 	namespace config
 	{
@@ -60,12 +60,14 @@ namespace kad::context
 
 	private:
 		Context& context_;
+
 		bool dirty_{ false };
 
 		std::filesystem::path path_config_;
 		std::filesystem::path path_config_presets_;
 
 		mutable config::Config config_;
+
 		PresetMap presets_;
 	};
 }

@@ -1,5 +1,5 @@
 #include <kad/bin/cli/init.hpp>
-#include <kad/bin/context/context.hpp>
+#include <kad/lib/context.hpp>
 
 #include <print>
 
@@ -29,7 +29,7 @@ void CommandInit::HandleCommandImpl()
 	// Convert file path to absolute.
 	data_.root = std::filesystem::absolute(data_.root);
 
-	const auto folder = context::FindRootDirectory();
+	const auto folder = lib::FindRootDirectory();
 	const auto folder_safe = folder.value_or(data_.root);
 
 	if (!folder.has_value())
@@ -50,5 +50,5 @@ void CommandInit::HandleCommandImpl()
 		std::println("Kad folder already exists at root path({})", folder_safe.string());
 	}
 
-	context::Context context{ folder_safe, true };
+	lib::Context context{ folder_safe, true };
 }

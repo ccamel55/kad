@@ -1,7 +1,7 @@
 #pragma once
 
 #include <kad/bin/cli/base.hpp>
-#include <kad/bin/context/context.hpp>
+#include <kad/lib/context.hpp>
 
 namespace kad::cli
 {
@@ -10,7 +10,7 @@ namespace kad::cli
 	public:
 		struct Data : public CommandData
 		{
-			Lazy<context::Context> context;
+			Lazy<lib::Context> context;
 
 			std::string preset{ };
 		};

@@ -1,12 +1,12 @@
-#include <kad/bin/context/config.hpp>
-#include <kad/bin/context/context.hpp>
+#include <kad/lib/config.hpp>
+#include <kad/lib/context.hpp>
 #include <kad/common/release_assert.hpp>
 
 #include <nlohmann/json.hpp>
 
 #include <fstream>
 
-using namespace kad::context;
+using namespace kad::lib;
 
 namespace
 {
@@ -22,14 +22,12 @@ namespace
 	{
 
 	}
-
-
 }
 
 template <>
-struct nlohmann::adl_serializer<kad::context::config::Config>
+struct nlohmann::adl_serializer<kad::lib::config::Config>
 {
-	using Type = kad::context::config::Config;
+	using Type = kad::lib::config::Config;
 
 	static void from_json(const json& json, Type& object)
 	{

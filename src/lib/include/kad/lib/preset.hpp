@@ -1,10 +1,11 @@
 #pragma once
 
+#include <kad/lib/target.hpp>
 #include <kad/common/no_copy_or_move.hpp>
 
 #include <filesystem>
 
-namespace kad::context
+namespace kad::lib
 {
 	constexpr auto PRESET_EXTENSION = ".json";
 
@@ -24,6 +25,9 @@ namespace kad::context
 			std::filesystem::path build_directory{ };
 		};
 	}
+
+	/// From a directory `path`, get the latest API reply.
+	std::optional<std::filesystem::path> GetApiReplyFile(const std::filesystem::path& path);
 
 	class Config;
 
@@ -50,7 +54,8 @@ namespace kad::context
 		[[nodiscard]] const std::filesystem::path& path_preset_file() const { return path_preset_file_; }
 		[[nodiscard]] const std::filesystem::path& path_preset_folder() const { return path_preset_folder_; }
 
-	public:
+		// Get corrected build directory from config file.
+		// If the config stores relative path, we will return this as absolute.
 		[[nodiscard]] std::filesystem::path DataBuildDirectory() const;
 
 	private:

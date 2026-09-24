@@ -1,13 +1,16 @@
-#include <kad/bin/context/config.hpp>
-#include <kad/bin/context/context.hpp>
-#include <kad/bin/context/preset.hpp>
+#include <kad/common/file.hpp>
 #include <kad/common/release_assert.hpp>
+#include <kad/lib/config.hpp>
+#include <kad/lib/context.hpp>
+#include <kad/lib/preset.hpp>
+#include <kad/model/query/query.hpp>
+#include <kad/model/query/query_json.hpp>
 
 #include <nlohmann/json.hpp>
 
 #include <fstream>
 
-using namespace kad::context;
+using namespace kad::lib;
 
 namespace
 {
@@ -18,22 +21,6 @@ namespace
 	const auto PATH_FILE_API_REQUEST	= std::filesystem::path(".cmake") / "api" / "v1" / "query" / std::format("client-{}", API_ID);
 	const auto PATH_FILE_API_RESPONSE	= std::filesystem::path(".cmake") / "api" / "v1" / "reply";
 
-	[[nodiscard]] nlohmann::json ApiRequest()
-	{
-		nlohmann::json requests = nlohmann::json::array();
-		{
-			auto& request = requests.emplace_back(nlohmann::json::object());
-			request["kind"] = "codemodel";
-			request["version"]["major"] = 2;
-			request["version"]["minor"] = 9;
-		}
-
-		nlohmann::json json;
-		json["client"] = nlohmann::json::object();
-		json["requests"] = std::move(requests);
-		return json;
-	}
-
 	bool CanMigrate()
 	{
 		return false;
@@ -43,78 +30,12 @@ namespace
 	{
 
 	}
-
-	[[nodiscard]] std::optional<std::filesystem::path> GetApiReplyFile(const std::filesystem::path& path)
-	{
-		std::string reply_file_name;
-		std::string reply_file_ordering;
-
-		// File with largest lexicographic order is the latest/current file.
-		// Index files follow naming: index-{random string}.json
-		// Error files follow naming: error-{random-string}.json
-		for (const auto& entry: std::filesystem::directory_iterator{ path })
-		{
-			if (entry.is_directory())
-			{
-				continue;
-			}
-
-			const auto& entry_path = entry.path();
-			if (entry_path.extension().string() != ".json")
-			{
-				continue;
-			}
-
-			constexpr auto PREFIX_INDEX = "index-";
-			constexpr auto PREFIX_ERROR = "error-";
-
-			const std::string filename = entry_path.stem().string();
-			std::string ordering;
-
-			if (filename.starts_with(PREFIX_INDEX))
-			{
-				ordering = filename.substr(std::strlen(PREFIX_INDEX));
-			}
-			else if (filename.starts_with(PREFIX_ERROR))
-			{
-				ordering = filename.substr(std::strlen(PREFIX_ERROR));
-			}
-			else
-			{
-				continue;
-			}
-
-			if (ordering > reply_file_ordering)
-			{
-				reply_file_name = filename;
-				reply_file_ordering = ordering;
-			}
-		}
-
-		if (reply_file_name.empty())
-		{
-			return std::nullopt;
-		}
-
-		return std::make_optional(std::filesystem::absolute(path) / reply_file_name);
-	}
-
-	std::filesystem::path ResolvePath(
-		const std::filesystem::path& path,
-		const std::filesystem::path& base
-	)
-	{
-		const auto rel = std::filesystem::relative(std::filesystem::absolute(path), base);
-		const auto is_relative = !rel.empty() && rel.native()[0] != '.';
-
-		return is_relative ? rel : std::filesystem::absolute(path);
-	}
 }
 
 template <>
-struct nlohmann::adl_serializer<kad::context::config::Preset>
+struct nlohmann::adl_serializer<kad::lib::config::Preset>
 {
-	using Type = kad::context::config::Preset;
+	using Type = kad::lib::config::Preset;
 
 	static void from_json(const json& json, Type& object)
 	{
@@ -128,6 +49,61 @@ struct nlohmann::adl_serializer<kad::context::config::Preset>
 		json[Type::Name::BUILD_DIRECTORY]	= object.build_directory;
 	}
 };
+
+std::optional<std::filesystem::path> kad::lib::GetApiReplyFile(const std::filesystem::path& path)
+{
+	std::string reply_file_name;
+	std::string reply_file_ordering;
+
+	// File with largest lexicographic order is the latest/current file.
+	// Index files follow naming: index-{random string}.json
+	// Error files follow naming: error-{random-string}.json
+	for (const auto& entry: std::filesystem::directory_iterator{ path })
+	{
+		if (entry.is_directory())
+		{
+			continue;
+		}
+
+		const auto& entry_path = entry.path();
+		if (entry_path.extension().string() != ".json")
+		{
+			continue;
+		}
+
+		constexpr auto PREFIX_INDEX = "index-";
+		constexpr auto PREFIX_ERROR = "error-";
+
+		const std::string filename = entry_path.stem().string();
+		std::string ordering;
+
+		if (filename.starts_with(PREFIX_INDEX))
+		{
+			ordering = filename.substr(std::strlen(PREFIX_INDEX));
+		}
+		else if (filename.starts_with(PREFIX_ERROR))
+		{
+			ordering = filename.substr(std::strlen(PREFIX_ERROR));
+		}
+		else
+		{
+			continue;
+		}
+
+		if (ordering > reply_file_ordering)
+		{
+			reply_file_name = filename;
+			reply_file_ordering = ordering;
+		}
+	}
+
+	if (reply_file_name.empty())
+	{
+		return std::nullopt;
+	}
+
+	return std::make_optional(std::filesystem::absolute(path) / reply_file_name);
+}
 
 Preset::Preset(Config& config, const std::string& name)
 	: config_{ config }
@@ -143,7 +119,7 @@ Preset::Preset(Config& config, const std::string& name, const std::filesystem::p
 	, path_preset_file_{ config.path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
 	, path_preset_folder_{ config.path_config_presets() / name }
 	, preset_{ std::make_optional(config::Preset{
-		.build_directory = ResolvePath(build_directory, config.context().path_root())
+		.build_directory = common::file::TryGetRelativeFromBase(build_directory, config.context().path_root())
 
 	})}
 {
@@ -189,7 +165,12 @@ void Preset::Delete()
 void Preset::CreateApiRequest()
 {
 	const auto api_request_folder = DataBuildDirectory() / PATH_FILE_API_REQUEST;
-	const auto api_request = ApiRequest();
+	const auto api_request = model::query::Query{
+		.requests = { model::query::Query::Request{
+			.kind = "codemodel",
+			.version = model::Version{ .major = 2, .minor = 9 }
+		}}
+	};
 
 	// If build directory does not exist, create it so we can add our API request.
 	if (!std::filesystem::exists(api_request_folder) || !std::filesystem::is_directory(api_request_folder)) [[unlikely]]
@@ -198,7 +179,7 @@ void Preset::CreateApiRequest()
 	}
 
 	std::ofstream out(api_request_folder / API_REQUEST_FILENAME);
-	out << api_request.dump(4);
+	out << nlohmann::json(api_request).dump(4);
 }
 
 bool Preset::HasApiRequest() const
