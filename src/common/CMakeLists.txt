@@ -21,6 +21,7 @@ target_link_libraries(
 			magic_enum::magic_enum
 			nlohmann_json::nlohmann_json
 			subprocess::subprocess
+			visit_struct::visit_struct
 )
 
 if(BUILD_TESTS)
@@ -29,6 +30,7 @@ if(BUILD_TESTS)
 				test/test_bitflag.cpp
 				test/test_file.cpp
 				test/test_process.cpp
+				test/test_json.cpp
 				test/test_scope_exit.cpp
 				test/test_string.cpp
 				test/test_version.cpp

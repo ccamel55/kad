@@ -22,3 +22,6 @@
 [submodule "thirdparty/subprocess.h"]
 	path = thirdparty/subprocess.h
 	url = git@github.com:sheredom/subprocess.h.git
+[submodule "thirdparty/visit_struct"]
+	path = thirdparty/visit_struct
+	url = git@github.com:cbeck88/visit_struct.git
