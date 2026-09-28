@@ -141,8 +141,10 @@ Preset::Preset(Config& config, const std::string& name, const std::filesystem::p
 	: config_{ config }
 	, path_preset_file_{ config.path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
 	, path_preset_folder_{ config.path_config_presets() / name }
-	, data_{ config::Preset{
-		.build_directory = common::file::TryGetRelativeFromBase(build_directory, config.context().path_root())
+	, data_{ [&](auto& x) {
+		x.emplace(config::Preset{
+			.build_directory = common::file::TryGetRelativeFromBase(build_directory, config.context().path_root())
+		});
 	}}
 {
 	release_assert(!std::filesystem::is_regular_file(path_preset_file_), "preset file must not exist");
@@ -190,7 +192,7 @@ void Preset::CreateApiRequest()
 	const auto api_request = model::query::Query{
 		.requests = { model::query::Query::Request{
 			.kind = "codemodel",
-			.version = model::Version{ .major = 2, .minor = 9 }
+			.version = model::Version{ .major = 2, .minor = 5 }
 		}}
 	};
 

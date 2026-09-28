@@ -104,6 +104,11 @@ namespace
 				return;
 			}
 
+			if (!it->second.HasApiRequest())
+			{
+				it->second.CreateApiRequest();
+			}
+
 			kad::process::CMake cmake{ };
 			auto handle = cmake.Configue({
 				.cmake_root = config.context().path_root(),

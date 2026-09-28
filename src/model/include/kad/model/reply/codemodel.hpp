@@ -9,7 +9,6 @@
 namespace kad::model::reply
 {
 	// NOTE: this is missing some fields that we don't really care about
-	// TODO(ALLAN): populate with remaining field to have a full struct
 	struct CodeModel
 	{
 		struct Name
