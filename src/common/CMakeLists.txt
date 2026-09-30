@@ -20,6 +20,7 @@ target_link_libraries(
 		PUBLIC
 			magic_enum::magic_enum
 			nlohmann_json::nlohmann_json
+			simdjson::simdjson
 			subprocess::subprocess
 			visit_struct::visit_struct
 )

@@ -1,14 +1,11 @@
 #include <catch2/catch_all.hpp>
 
-#include <kad/common/json/recursive_filter.hpp>
-#include <kad/common/json/serialize_json.hpp>
-#include <kad/common/traits.hpp>
+#include <simdjson.h>
+#include <visit_struct/visit_struct.hpp>
 
 #include <print>
 #include <string>
 #include <vector>
-
-using namespace kad::common;
 
 struct SomeClassA
 {
@@ -38,30 +35,91 @@ VISITABLE_STRUCT(
 	other_class_vector
 );
 
-JSON_SERIALIZE_STRUCT(SomeClassA);
-JSON_SERIALIZE_STRUCT(SomeClassB);
-
-template <typename InputType, kad::common::json::detail::SerializeWithFilterType Type>
-[[nodiscard]] Type parse_json_object(InputType& input)
+namespace simdjson
 {
-	std::vector<kad::common::json::RecursiveFilter*> object_filter;
-	nlohmann::json::parser_callback_t filter_cb = [&](int depth, nlohmann::json::parse_event_t event, nlohmann::json& parsed)
+	template <typename Json>
+	auto tag_invoke(simdjson::serialize_tag, Json& obj, const SomeClassA& value)
 	{
-		// We should never see an array start/end as the top level root.
-	};
-	nlohmann::json::parse(input, filter_cb);
-};
+		using Type = std::remove_cvref_t<decltype(value)>;
+		bool first = true;
+
+		obj.start_object();
+		visit_struct::visit_pointers<Type>([&]<typename FieldType>(const char* name, FieldType Type::* ptr)
+		{
+			if (!first)
+			{
+				obj.append_comma();
+			}
+
+			obj.append_key_value(name, value.*ptr);
+			first = false;
+		});
+		obj.end_object();
+	}
+
+	template <typename Json>
+	auto tag_invoke(simdjson::deserialize_tag, Json& obj, SomeClassA& value)
+	{
+		simdjson::ondemand::object object;
+		auto err = obj.get_object().get(object);
+
+		using Type = std::remove_cvref_t<decltype(value)>;
+		visit_struct::visit_pointers<Type>([&]<typename FieldType>(const char* name, FieldType Type::* ptr)
+		{
+			if (err)
+			{
+				return;
+			}
+
+			err = object[name].get<FieldType>(value.*ptr);
+		});
+
+		if (err)
+		{
+			return err;
+		}
+
+		return simdjson::SUCCESS;
+	}
+}
 
 TEST_CASE("JSON filter", "[utils]")
 {
-	const auto& filter_a = nlohmann::adl_serializer<SomeClassA>::Filter;
-	filter_a.Log();
+	const std::string_view text = R"(
+	{
+		"some_int": 1234,
+		"array_int": [1, 2, 3],
+		"array_double": [12.23, 35.12]
+	}
+	)";
 
-	SomeClassA a{ .some_int = 66, .array_int = { 1, 2, 3 }, .array_double = { 43.23, 45645.5 } };
+	const SomeClassA class_a
+	{
+		.some_int = 1234,
+		.array_int = { 1, 2, 3 },
+		.array_double = { 12.23, 35.12 }
+	};
 
-	nlohmann::json parsed_a = a;
-	std::println("{}", parsed_a.dump(4));
+	{
+		simdjson::padded_input json(text);
 
-	const auto& filter_b = nlohmann::adl_serializer<SomeClassB>::Filter;
-	filter_b.Log();
+		simdjson::ondemand::parser parser;
+		simdjson::ondemand::document parsed = parser.iterate(json);
+
+		const auto value = parsed.get<SomeClassA>();
+		CHECK_FALSE(value.error());
+
+		CHECK(value->some_int == class_a.some_int);
+		CHECK(value->array_int == class_a.array_int);
+		CHECK(value->array_double == class_a.array_double);
+	}
+
+	{
+		std::string out;
+
+		simdjson::fractured_json_options options;
+		CHECK_FALSE(simdjson::to_json(class_a, out));
+
+		std::println("{}", out);
+	}
 }
