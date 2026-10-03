@@ -2,6 +2,7 @@
 
 #include <kad/common/format/override_array.hpp>
 #include <kad/common/format/override_class.hpp>
+#include <kad/common/format/override_optional.hpp>
 
 #include <kad/model/shared/common_fmt.hpp>
 #include <kad/model/query/query.hpp>

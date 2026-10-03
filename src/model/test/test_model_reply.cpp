@@ -38,8 +38,8 @@ TEST_CASE("codemodel", "[model]")
 						.jsonFile = "lol"
 					}
 				},
-				.abstractTargets =
-				{
+				.abstractTargets = std::make_optional<std::vector<CodeModel::Configurations::Target>>
+				({
 					CodeModel::Configurations::Target
 					{
 						.name = "target-2",
@@ -48,7 +48,7 @@ TEST_CASE("codemodel", "[model]")
 						.projectIndex = 2,
 						.jsonFile = "lol"
 					}
-				}
+				})
 			}
 		}
 	};

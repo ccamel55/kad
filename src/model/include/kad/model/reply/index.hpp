@@ -80,7 +80,7 @@ namespace kad::model::reply
 					using ReplyReferenceOrErrorArrayOrError = MaybeError<std::vector<ReplyReferenceOrError>>;
 
 					//  A copy of the query.json file client member, if it exists.
-					std::string client;
+					std::optional<std::string> client;
 
 					// Present only if the client has a query.json. An Error if that file could not be read or
 					// did not parse as a JSON object.

@@ -26,7 +26,6 @@
 
 #include <expected>
 #include <filesystem>
-#include <fstream>
 #include <print>
 
 namespace
@@ -188,9 +187,12 @@ int main(int argc, char** argv)
 				data.targets.emplace(target.name);
 			}
 
-			for (const auto& abstract_target: configuration.abstractTargets)
+			if (configuration.abstractTargets.has_value())
 			{
-				data.targets.emplace(abstract_target.name);
+				for (const auto& abstract_target: configuration.abstractTargets.value())
+				{
+					data.targets.emplace(abstract_target.name);
+				}
 			}
 		}
 

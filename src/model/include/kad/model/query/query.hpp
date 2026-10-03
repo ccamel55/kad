@@ -21,7 +21,7 @@ namespace kad::model::query
 			// Optional member reserved for use by the client. This value is preserved in the reply written
 			// for the client in the v1 Reply Index File but is otherwise ignored. Clients may use this to
 			// pass custom information with a request through to its reply.
-			std::string client;
+			std::optional<std::string> client;
 
 			constexpr bool operator==(const Request&) const = default;
 		};
@@ -32,7 +32,7 @@ namespace kad::model::query
 		// Optional member reserved for use by the client. This value is preserved in the reply written for
 		// the client in the v1 Reply Index File but is otherwise ignored. Clients may use this to pass
 		// custom information with a query through to its reply
-		std::string client;
+		std::optional<std::string> client;
 
 		constexpr bool operator==(const Query&) const = default;
 	};

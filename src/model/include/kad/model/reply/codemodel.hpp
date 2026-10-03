@@ -49,7 +49,7 @@ namespace kad::model::reply
 			// These are imported targets or interface libraries created by calls to add_executable() or add_library().
 			// In the case of interface libraries, only those that are not part of the build system are included in this array.
 			// Interface libraries that do participate in the build system will be included in the targets array instead.
-			std::vector<Target> abstractTargets;
+			std::optional<std::vector<Target>> abstractTargets;
 
 			constexpr bool operator==(const Configurations&) const = default;
 		};
