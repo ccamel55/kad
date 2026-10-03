@@ -103,7 +103,7 @@ CommandTarget::CommandTarget(CLI::App* parent)
 	Command()->require_subcommand(0);
 	Command()->subcommand_fallthrough(false);
 
-	auto preset = Command()
+	Command()
 		->add_option("-p,--preset", data_.preset, "CMake preset to use. Will take precidence over active preset.")
 		->required(false);
 

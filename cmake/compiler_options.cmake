@@ -1,0 +1,6 @@
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	string(APPEND CMAKE_CXX_FLAGS " -Wall -Wpedantic -Werror -ftree-vectorize -march=native -Wno-deprecated-declarations -Wno-interference-size")
+	string(APPEND CMAKE_CXX_FLAGS_RELEASE " -Ofast -fomit-frame-pointer -flto=auto")
+else ()
+	message(FATAL_ERROR "Fuck off windows.")
+endif ()

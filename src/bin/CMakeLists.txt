@@ -1,31 +1,13 @@
-project(kad)
+binary(
+	NAME
+		kad
 
-add_executable(
-	${PROJECT_NAME}
-		src/main.cpp
-		src/cli/cli.cpp
-		src/cli/init.cpp
-		src/cli/preset.cpp
-		src/cli/target.cpp
-		src/tui/tui.cpp
-		src/process/cmake.cpp
-		src/process/target.cpp
-)
-
-target_include_directories(
-	${PROJECT_NAME}
-		PRIVATE
-			include
-)
-
-target_link_libraries(
-	${PROJECT_NAME}
-		PUBLIC
-			CLI11::CLI11
-			ftxui::ftxui
-			rapidfuzz::rapidfuzz
-			spdlog::spdlog
-			kad::common
-			kad::lib
-			kad::model
+	DEPENDENCIES
+		kad::common
+		kad::lib
+		kad::model
+		CLI11::CLI11
+		ftxui::ftxui
+		rapidfuzz::rapidfuzz
+		spdlog::spdlog
 )
