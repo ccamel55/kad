@@ -2,7 +2,7 @@
 
 #include <magic_enum/magic_enum.hpp>
 
-#define STD_FORMAT_ENUM(EnumType) 													\
+#define STD_FMT_ENUM(EnumType) 														\
 	template <>																		\
 	struct std::formatter<EnumType>													\
 	{																				\

@@ -194,5 +194,49 @@ TEST_CASE("index", "[model]")
 
 TEST_CASE("target", "[model]")
 {
+	Target obj =
+	{
+		.name = "some-target",
+		.id = "this-target",
+		.type = TargetType::EXECUTABLE,
+		.paths =
+		{
+			.source = "path-2",
+			.build = "path"
+		},
+		.nameOnDisk = "target-name",
+		.artifacts = std::make_optional<std::vector<Target::Artifact>>(
+		{
+			Target::Artifact
+			{
+				.path = "artifact-out"
+			}
+		}),
+		.debugger = std::make_optional<Target::Debugger>(Target::Debugger
+		{
+			.workingDirectory = "my-working-dir"
+		})
+	};
 
+	const std::string_view json =
+	R"({
+		"name": "some-target",
+		"id": "this-target",
+		"type": "EXECUTABLE",
+		"paths": {
+			"source": "path-2",
+			"build": "path"
+		},
+		"nameOnDisk": "target-name",
+		"artifacts": [
+			{
+				"path": "artifact-out"
+			}
+		],
+		"debugger": {
+			"workingDirectory": "my-working-dir"
+		}
+	})";
+
+	kad::common::test::CheckTypeSerializeDeserialize(obj, json);
 }
