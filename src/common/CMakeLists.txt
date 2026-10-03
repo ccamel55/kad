@@ -1,49 +1,29 @@
-project(common)
+library(
+	NAME
+		common
 
-add_library(
-	${PROJECT_NAME}
-		src/file.cpp
-		src/process.cpp
-		src/string.cpp
+	DEPENDENCIES
+		magic_enum::magic_enum
+		simdjson::simdjson
+		subprocess::subprocess
+		visit_struct::visit_struct
 )
 
-add_library(kad::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+test(
+	NAME
+		common-test
 
-target_include_directories(
-	${PROJECT_NAME}
-		PUBLIC
-			${CMAKE_CURRENT_LIST_DIR}/include
+	SOURCES
+		./test/test_bitflag.cpp
+		./test/test_file.cpp
+		./test/test_json.cpp
+		./test/test_lazy.cpp
+		./test/test_process.cpp
+		./test/test_scope_exit.cpp
+		./test/test_string.cpp
+		./test/test_tracked.cpp
+		./test/test_version.cpp
+
+	DEPENDENCIES
+		kad::common
 )
-
-target_link_libraries(
-	${PROJECT_NAME}
-		PUBLIC
-			magic_enum::magic_enum
-			simdjson::simdjson
-			subprocess::subprocess
-			visit_struct::visit_struct
-)
-
-if(BUILD_TESTS)
-		add_executable(
-			${PROJECT_NAME}-test
-				test/test_bitflag.cpp
-				test/test_file.cpp
-				test/test_process.cpp
-				test/test_json.cpp
-				test/test_lazy.cpp
-				test/test_scope_exit.cpp
-				test/test_string.cpp
-				test/test_tracked.cpp
-				test/test_version.cpp
-		)
-
-		target_link_libraries(
-			${PROJECT_NAME}-test
-				PRIVATE
-					${PROJECT_NAME}
-					Catch2::Catch2WithMain
-		)
-
-		catch_discover_tests(${PROJECT_NAME}-test)
-endif()

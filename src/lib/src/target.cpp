@@ -8,15 +8,15 @@ using namespace kad::lib;
 
 namespace
 {
-	bool CanMigrate()
-	{
-		return false;
-	}
-
-	void ApplyMigration()
-	{
-
-	}
+// 	bool CanMigrate()
+// 	{
+// 		return false;
+// 	}
+//
+// 	void ApplyMigration()
+// 	{
+//
+// 	}
 }
 
 Target::Target(Preset& preset, const std::string& name, const std::filesystem::path& path_target_json)

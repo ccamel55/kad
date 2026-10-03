@@ -1,39 +1,41 @@
-project(model)
+interface(
+	NAME
+		model
 
-add_library(
-	${PROJECT_NAME}
-		src/model.cpp
+	DEPENDENCIES
+		kad::common
+		simdjson::simdjson
 )
 
-add_library(kad::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+test(
+	NAME
+		model-query
 
-target_include_directories(
-	${PROJECT_NAME}
-		PUBLIC
-			${CMAKE_CURRENT_LIST_DIR}/include
+	SOURCES
+		./test/test_model_query.cpp
+
+	DEPENDENCIES
+		kad::model
 )
 
-target_link_libraries(
-	${PROJECT_NAME}
-		PUBLIC
-			kad::common
-			simdjson::simdjson
+test(
+	NAME
+		model-reply
+
+	SOURCES
+		./test/test_model_reply.cpp
+
+	DEPENDENCIES
+		kad::model
 )
 
-if(BUILD_TESTS)
-		add_executable(
-			${PROJECT_NAME}-test
-				test/test_model_query.cpp
-				test/test_model_reply.cpp
-				test/test_model_shared.cpp
-		)
+test(
+	NAME
+		model-shared
 
-		target_link_libraries(
-			${PROJECT_NAME}-test
-				PRIVATE
-					${PROJECT_NAME}
-					Catch2::Catch2WithMain
-		)
+	SOURCES
+		./test/test_model_shared.cpp
 
-		catch_discover_tests(${PROJECT_NAME}-test)
-endif()
+	DEPENDENCIES
+		kad::model
+)

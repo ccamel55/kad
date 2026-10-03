@@ -66,7 +66,7 @@ Config::Config(Context& context)
 	else
 	{
 		// Look for all presets. Preset file name must match CMake preset name.
-		for (const auto entry: std::filesystem::directory_iterator{ path_config_presets_ })
+		for (const auto& entry: std::filesystem::directory_iterator{ path_config_presets_ })
 		{
 			if (!entry.is_regular_file() || entry.path().extension() != PRESET_EXTENSION)
 			{
