@@ -1,7 +1,7 @@
 #pragma once
 
+#include <kad/common/format/override_array.hpp>
 #include <kad/common/format/override_class.hpp>
-#include <kad/common/format/override_iterable.hpp>
 
 #include <kad/model/shared/common_fmt.hpp>
 #include <kad/model/reply/codemodel.hpp>
@@ -11,25 +11,24 @@
 STD_FMT_CLASS(kad::model::reply::CodeModel::Configurations::Target, [](const auto& object, std::format_context& ctx)
 {
 	return std::format_to(
-		ctx.out(), "name({}) id({}) directory_index({}) project_index({}) json_file({})",
+		ctx.out(), "name({}) id({}) directoryIndex({}) projectIndex({}) jsonFile({})",
 		object.name,
 		object.id,
-		object.directory_index,
-		object.project_index,
-		object.json_file.string()
+		object.directoryIndex,
+		object.projectIndex,
+		object.jsonFile.string()
 	);
 });
 
 STD_FMT_CLASS(kad::model::reply::CodeModel::Configurations, [](const auto& object, std::format_context& ctx)
 {
 	return std::format_to(
-		ctx.out(), "name({}) targets({}) abstract_targets({})",
+		ctx.out(), "name({}) targets({}) abstractTargets({})",
 		object.name,
-		kad::common::FmtIterable(object.targets),
-		kad::common::FmtIterable(object.abstract_targets)
+		object.targets,
+		object.abstractTargets
 	);
 });
-
 
 STD_FMT_CLASS(kad::model::reply::CodeModel, [](const auto& object, std::format_context& ctx)
 {
@@ -37,6 +36,6 @@ STD_FMT_CLASS(kad::model::reply::CodeModel, [](const auto& object, std::format_c
 		ctx.out(), "paths({}) version({}) configurations({})",
 		object.paths,
 		object.version,
-		kad::common::FmtIterable(object.configurations)
+		object.configurations
 	);
 });

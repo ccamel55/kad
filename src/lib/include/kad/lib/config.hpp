@@ -1,6 +1,8 @@
 #pragma once
 
+#include <kad/lib/data.hpp>
 #include <kad/lib/preset.hpp>
+
 #include <kad/common/no_copy_or_move.hpp>
 #include <kad/common/tracked.hpp>
 
@@ -9,23 +11,6 @@
 
 namespace kad::lib
 {
-	namespace config
-	{
-		static constexpr uint16_t REVISION = 1;
-
-		struct Config
-		{
-			struct Name
-			{
-				static constexpr auto REVISION = "revision";
-				static constexpr auto ACTIVE_PRESET = "active_preset";
-			};
-
-			uint16_t revision{ REVISION };
-			std::string active_preset{ };
-		};
-	}
-
 	class Context;
 
 	class Config : public common::NoCopyOrMove

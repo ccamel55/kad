@@ -1,39 +1,18 @@
 #pragma once
 
+#include <kad/lib/data.hpp>
+
 #include <kad/common/bit_flag.hpp>
 #include <kad/common/no_copy_or_move.hpp>
 
 #include <kad/model/reply/target.hpp>
 
 #include <filesystem>
-#include <map>
 #include <string>
-#include <vector>
 
 namespace kad::lib
 {
 	constexpr auto TARGET_CONFIG_EXTENSION = ".json";
-
-	namespace config
-	{
-		static constexpr uint16_t REVISION_TARGET = 1;
-
-		struct Target
-		{
-			struct Name
-			{
-				static constexpr auto REVISION = "revision";
-				static constexpr auto ENVIRONMENT_VARIABLES = "environment_variables";
-				static constexpr auto ARGUMENTS = "arguments";
-				static constexpr auto WORKING_DIRECTORY = "workding_directory";
-			};
-
-			uint16_t revision{ REVISION_TARGET };
-			std::map<std::string, std::string> environment_variables;
-			std::vector<std::string> arguments;
-			std::filesystem::path workding_directory;
-		};
-	}
 
 	class Preset;
 

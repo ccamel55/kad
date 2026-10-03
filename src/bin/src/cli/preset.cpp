@@ -104,6 +104,11 @@ namespace
 				return;
 			}
 
+			if (!it->second.HasApiRequest())
+			{
+				it->second.CreateApiRequest();
+			}
+
 			kad::process::CMake cmake{ };
 			auto handle = cmake.Configue({
 				.cmake_root = config.context().path_root(),
@@ -280,6 +285,6 @@ void CommandPreset::HandleCommandImpl()
 
 		std::println("Preset: '{}'", data_.preset);
 		std::println("\t- active: {}", config.data().active_preset == data_.preset);
-		std::println("\t- {}: '{}'", lib::config::Preset::Name::BUILD_DIRECTORY, preset->DataBuildDirectory().string());
+		std::println("\t- build directory: '{}'", preset->DataBuildDirectory().string());
 	}
 }

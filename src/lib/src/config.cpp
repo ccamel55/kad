@@ -2,8 +2,10 @@
 #include <kad/lib/context.hpp>
 
 #include <kad/common/release_assert.hpp>
+#include <kad/common/json/helper.hpp>
 
-#include <nlohmann/json.hpp>
+#include <kad/lib/data.hpp>
+#include <kad/lib/data_json.hpp>
 
 #include <fstream>
 
@@ -25,24 +27,6 @@ namespace
 	}
 }
 
-template <>
-struct nlohmann::adl_serializer<kad::lib::config::Config>
-{
-	using Type = kad::lib::config::Config;
-
-	static void from_json(const json& json, Type& object)
-	{
-		object.revision			= json.at(Type::Name::REVISION);
-		object.active_preset	= json.at(Type::Name::ACTIVE_PRESET);
-	}
-
-	static void to_json(json& json, const Type& object)
-	{
-		json[Type::Name::REVISION]		= object.revision;
-		json[Type::Name::ACTIVE_PRESET]	= object.active_preset;
-	}
-};
-
 Config::Config(Context& context)
 	: context_{ context }
 	, path_config_{ context_.path_kad_folder() / KAD_CONFIG }
@@ -51,17 +35,13 @@ Config::Config(Context& context)
 	if (!std::filesystem::is_regular_file(path_config_))
 	{
 		// Create root config file if it doesn't exist
-		nlohmann::json data_json(data_.value());
-		{
-			std::ofstream out(path_config_);
-			out << data_json.dump(4);
-		}
+		std::ofstream out(path_config_);
+		out << common::json::Dump(data_.value());
 	}
 	else
 	{
 		// Load existing config file
-		std::ifstream in(path_config_);
-		data_ = nlohmann::json::parse(in).get<config::Config>();
+		data_ = common::json::ParseFile<config::Config>(path_config_);
 		data_.SetClean();
 
 		if (data_->revision != config::REVISION) [[unlikely]]
@@ -108,11 +88,8 @@ Config::~Config()
 {
 	if (data_.dirty())
 	{
-		nlohmann::json data_json(data_.value());
-		{
-			std::ofstream out(path_config_);
-			out << data_json.dump(4);
-		}
+		std::ofstream out(path_config_);
+		out << common::json::Dump(data_.value());
 	}
 }
 

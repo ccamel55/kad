@@ -1,5 +1,4 @@
 #include <kad/bin/cli/target.hpp>
-#include <kad/common/format/override_iterable.hpp>
 
 #include <print>
 
@@ -78,7 +77,7 @@ namespace
 				parent_data->preset,
 				parent_data->target,
 				data_.debug,
-				kad::common::FmtIterable{ data_.args }
+				data_.args
 			);
 		}
 

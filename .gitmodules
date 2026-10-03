@@ -4,9 +4,6 @@
 [submodule "thirdparty/Catch2"]
 	path = thirdparty/Catch2
 	url = git@github.com:catchorg/Catch2.git
-[submodule "thirdparty/json"]
-	path = thirdparty/json
-	url = git@github.com:nlohmann/json.git
 [submodule "thirdparty/magic_enum"]
 	path = thirdparty/magic_enum
 	url = git@github.com:Neargye/magic_enum.git
@@ -22,3 +19,9 @@
 [submodule "thirdparty/subprocess.h"]
 	path = thirdparty/subprocess.h
 	url = git@github.com:sheredom/subprocess.h.git
+[submodule "thirdparty/visit_struct"]
+	path = thirdparty/visit_struct
+	url = git@github.com:cbeck88/visit_struct.git
+[submodule "thirdparty/simdjson"]
+	path = thirdparty/simdjson
+	url = git@github.com:simdjson/simdjson.git

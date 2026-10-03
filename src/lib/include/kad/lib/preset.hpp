@@ -1,6 +1,8 @@
 #pragma once
 
+#include <kad/lib/data.hpp>
 #include <kad/lib/target.hpp>
+
 #include <kad/common/no_copy_or_move.hpp>
 #include <kad/common/lazy.hpp>
 #include <kad/common/tracked.hpp>
@@ -10,23 +12,6 @@
 namespace kad::lib
 {
 	constexpr auto PRESET_EXTENSION = ".json";
-
-	namespace config
-	{
-		static constexpr uint16_t REVISION_PRESET = 1;
-
-		struct Preset
-		{
-			struct Name
-			{
-				static constexpr auto REVISION = "revision";
-				static constexpr auto BUILD_DIRECTORY = "build_directory";
-			};
-
-			uint16_t revision{ REVISION_PRESET };
-			std::filesystem::path build_directory{ };
-		};
-	}
 
 	/// From a directory `path`, get the latest API reply.
 	std::optional<std::filesystem::path> GetApiReplyFile(const std::filesystem::path& path);

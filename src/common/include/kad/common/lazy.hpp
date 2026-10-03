@@ -11,11 +11,6 @@ namespace kad::common
 	class Lazy
 	{
 	public:
-		constexpr Lazy(Type init)
-			: init_{ nullptr }
-			, value_{ std::make_optional(std::move(init)) }
-		{ }
-
 		constexpr Lazy(std::function<void(std::optional<Type>&)> init)
 			: init_{ std::move(init) }
 			, value_{ std::nullopt }

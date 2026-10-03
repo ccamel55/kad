@@ -4,7 +4,6 @@
 #include <kad/common/lazy.hpp>
 #include <kad/lib/context.hpp>
 
-
 namespace kad::cli
 {
 	class CommandPreset final : public CommandBase
