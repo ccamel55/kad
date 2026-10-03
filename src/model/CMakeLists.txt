@@ -17,13 +17,15 @@ target_link_libraries(
 	${PROJECT_NAME}
 		PUBLIC
 			kad::common
-			nlohmann_json::nlohmann_json
+			simdjson::simdjson
 )
 
 if(BUILD_TESTS)
 		add_executable(
 			${PROJECT_NAME}-test
-				test/test_model.cpp
+				test/test_model_query.cpp
+				test/test_model_reply.cpp
+				test/test_model_shared.cpp
 		)
 
 		target_link_libraries(

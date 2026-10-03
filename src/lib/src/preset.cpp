@@ -1,16 +1,18 @@
 #include <kad/common/file.hpp>
 #include <kad/common/release_assert.hpp>
+#include <kad/common/json/helper.hpp>
 
 #include <kad/lib/config.hpp>
 #include <kad/lib/context.hpp>
 #include <kad/lib/preset.hpp>
 
+#include <kad/lib/data.hpp>
+#include <kad/lib/data_json.hpp>
+
 #include <kad/model/query/query.hpp>
 #include <kad/model/query/query_json.hpp>
 #include <kad/model/reply/codemodel.hpp>
 #include <kad/model/reply/codemodel_json.hpp>
-
-#include <nlohmann/json.hpp>
 
 #include <fstream>
 
@@ -35,24 +37,6 @@ namespace
 
 	}
 }
-
-template <>
-struct nlohmann::adl_serializer<kad::lib::config::Preset>
-{
-	using Type = kad::lib::config::Preset;
-
-	static void from_json(const json& json, Type& object)
-	{
-		object.revision			= json.at(Type::Name::REVISION);
-		object.build_directory	= json.at(Type::Name::BUILD_DIRECTORY).get<std::filesystem::path>();
-	}
-
-	static void to_json(json& json, const Type& object)
-	{
-		json[Type::Name::REVISION]			= object.revision;
-		json[Type::Name::BUILD_DIRECTORY]	= object.build_directory;
-	}
-};
 
 std::optional<std::filesystem::path> kad::lib::GetApiReplyFile(const std::filesystem::path& path)
 {
@@ -116,9 +100,7 @@ Preset::Preset(Config& config, const std::string& name)
 	, data_{ [&](auto& x) {
 		release_assert(std::filesystem::is_regular_file(path_preset_file_), "preset file must exist");
 
-		std::ifstream in(path_preset_file_);
-		auto& preset = x.emplace(nlohmann::json::parse(in).get<config::Preset>());
-
+		auto& preset = x.emplace(kad::common::json::ParseFile<config::Preset>(path_preset_file_));
 		if (preset->revision != config::REVISION_PRESET) [[unlikely]]
 		{
 			if (!CanMigrate())
@@ -141,17 +123,18 @@ Preset::Preset(Config& config, const std::string& name, const std::filesystem::p
 	: config_{ config }
 	, path_preset_file_{ config.path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
 	, path_preset_folder_{ config.path_config_presets() / name }
-	, data_{ config::Preset{
-		.build_directory = common::file::TryGetRelativeFromBase(build_directory, config.context().path_root())
+	, data_{ [&](auto& x) {
+		x.emplace(config::Preset{
+			.build_directory = common::file::TryGetRelativeFromBase(build_directory, config.context().path_root())
+		});
 	}}
 {
 	release_assert(!std::filesystem::is_regular_file(path_preset_file_), "preset file must not exist");
 	release_assert(!std::filesystem::is_directory(path_preset_folder_), "preset folder must not exist");
 
-	nlohmann::json data_json(data_.value().value());
 	{
 		std::ofstream out(path_preset_file_);
-		out << data_json.dump(4);
+		out << common::json::Dump(data_.value().value());
 	}
 
 	std::filesystem::create_directory(path_preset_folder_);
@@ -168,10 +151,9 @@ Preset::~Preset()
 
 	if (data_.has_value() && data_.value().dirty())
 	{
-		nlohmann::json data_json(data_.value().value());
 		{
 			std::ofstream out(path_preset_file_);
-			out << data_json.dump(4);
+			out << common::json::Dump(data_.value().value());
 		}
 	}
 }
@@ -190,7 +172,7 @@ void Preset::CreateApiRequest()
 	const auto api_request = model::query::Query{
 		.requests = { model::query::Query::Request{
 			.kind = "codemodel",
-			.version = model::Version{ .major = 2, .minor = 9 }
+			.version = model::Version{ .major = 2, .minor = 5 }
 		}}
 	};
 
@@ -200,8 +182,10 @@ void Preset::CreateApiRequest()
 		std::filesystem::create_directories(api_request_folder);
 	}
 
-	std::ofstream out(api_request_folder / API_REQUEST_FILENAME);
-	out << nlohmann::json(api_request).dump(4);
+	{
+		std::ofstream out(api_request_folder / API_REQUEST_FILENAME);
+		out << common::json::Dump(api_request);
+	}
 }
 
 bool Preset::HasApiRequest() const

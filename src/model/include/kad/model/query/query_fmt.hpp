@@ -1,7 +1,7 @@
 #pragma once
 
+#include <kad/common/format/override_array.hpp>
 #include <kad/common/format/override_class.hpp>
-#include <kad/common/format/override_iterable.hpp>
 
 #include <kad/model/shared/common_fmt.hpp>
 #include <kad/model/query/query.hpp>
@@ -22,7 +22,7 @@ STD_FMT_CLASS(kad::model::query::Query, [](const auto& object, std::format_conte
 {
 	return std::format_to(
 		ctx.out(), "requests({}) client({})",
-		kad::common::FmtIterable(object.requests),
+		object.requests,
 		object.client
 	);
 });

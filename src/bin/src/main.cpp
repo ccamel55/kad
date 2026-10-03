@@ -11,10 +11,15 @@
 #include <kad/model/query/query_fmt.hpp>
 #include <kad/model/query/query_json.hpp>
 
+#include <kad/model/reply/index.hpp>
+#include <kad/model/reply/index_fmt.hpp>
+#include <kad/model/reply/index_json.hpp>
+
 #include <kad/model/reply/codemodel.hpp>
 #include <kad/model/reply/codemodel_fmt.hpp>
 #include <kad/model/reply/codemodel_json.hpp>
 
+#include <kad/common/json/helper.hpp>
 #include <kad/common/process.hpp>
 #include <kad/common/string.hpp>
 #include <kad/common/version.hpp>
@@ -38,32 +43,36 @@ namespace
 			return std::unexpected{ std::format("Could not find API resonse index file({})", index_path.string()) };
 		}
 
-		std::ifstream index_file{ index_path };
+		auto index_file = kad::common::json::ParseFile<kad::model::reply::Index>(index_path);
+		const auto client_reply = index_file.reply.clients.find(std::format("client-{}", client_name));
 
-		const std::string client_id = std::format("client-{}", client_name);
-		const nlohmann::json document = nlohmann::json::parse(index_file);
-
-		if (!document["reply"].contains(client_id) || !document["reply"][client_id].contains("query.json"))
+		if (client_reply == index_file.reply.clients.end() || !client_reply->second.queryJson.has_value())
 		{
-			return std::unexpected{ std::format("Could not find client({}) in reply index({})", client_id, index_path.string()) };
+			return std::unexpected{ std::format("Could not find client({}) in reply index({})", client_reply->first, index_path.string()) };
 		}
 
 		std::string codemodel_file_name;
-
-		// Files should be parsed according to the CMake docs.
-		// https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#v1-reply-file-reference
-		const nlohmann::json& responses = document["reply"][client_id]["query.json"]["responses"];
-		for (const auto& response: responses)
+		if (const auto& responses = client_reply->second.queryJson.value().responses; responses.has_value())
 		{
-			// TODO(allan): maybe we want to warn about this too?
-			// We only know about v2 of the codemodel API so any other major versions should be skipped.
-			if (response["kind"] != "codemodel" || response["version"]["major"] != 2)
+			// Files should be parsed according to the CMake docs.
+			// https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#v1-reply-file-reference
+			for (const auto& response: responses.value())
 			{
-				continue;
-			}
+				if (!response.has_value())
+				{
+					continue;
+				}
 
-			codemodel_file_name = response["jsonFile"];
-			break;
+				// TODO(allan): maybe we want to warn about this too?
+				// We only know about v2 of the codemodel API so any other major versions should be skipped.
+				if (response->kind != "codemodel" || response->version.major != 2)
+				{
+					continue;
+				}
+
+				codemodel_file_name = response->jsonFile;
+				break;
+			}
 		}
 
 		if (codemodel_file_name.empty())
@@ -81,8 +90,8 @@ namespace
 			return std::unexpected{ std::format("Could not find codemodel file({})", codemodel_path.string()) };
 		}
 
-		std::ifstream codemodel_file{ codemodel_path };
-		return nlohmann::json::parse(codemodel_file).get<kad::model::reply::CodeModel>();
+		auto codemodel_file = kad::common::json::ParseFile<kad::model::reply::CodeModel>(codemodel_path);
+		return codemodel_file;
 	}
 }
 
@@ -179,7 +188,7 @@ int main(int argc, char** argv)
 				data.targets.emplace(target.name);
 			}
 
-			for (const auto& abstract_target: configuration.abstract_targets)
+			for (const auto& abstract_target: configuration.abstractTargets)
 			{
 				data.targets.emplace(abstract_target.name);
 			}
