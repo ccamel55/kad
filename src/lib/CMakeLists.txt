@@ -6,6 +6,7 @@ library(
 		kad::common
 		kad::model
 		rapidfuzz::rapidfuzz
+		spdlog::spdlog
 )
 
 test(

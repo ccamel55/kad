@@ -16,11 +16,19 @@ namespace kad::lib
 
 	class Preset;
 
-	class Target : public common::NoCopyOrMove
+	class Target : public common::NoCopy
 	{
 	public:
-		Target(Preset& preset, const std::string& name, const std::filesystem::path& path_target_json);
-		~Target();
+
+	};
+
+	class Targets : public common::NoCopyOrMove
+	{
+	public:
+		using TargetMap = std::map<std::string, Target>;
+
+		Targets(Preset& preset, const std::string& name, const std::filesystem::path& path_target_json);
+		~Targets();
 
 		[[nodiscard]] Preset& config() { return preset_; }
 		[[nodiscard]] const Preset& config() const { return preset_; }
@@ -33,6 +41,7 @@ namespace kad::lib
 
 		std::filesystem::path path_target_json_;
 		std::filesystem::path path_target_config_;
+
 
 	};
 }

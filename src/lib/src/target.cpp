@@ -19,7 +19,7 @@ namespace
 // 	}
 }
 
-Target::Target(Preset& preset, const std::string& name, const std::filesystem::path& path_target_json)
+Targets::Targets(Preset& preset, const std::string& name, const std::filesystem::path& path_target_json)
 	: preset_{ preset }
 	, path_target_json_{ path_target_json }
 	, path_target_config_{ preset_.path_preset_folder() / name }
@@ -27,7 +27,7 @@ Target::Target(Preset& preset, const std::string& name, const std::filesystem::p
 
 }
 
-Target::~Target()
+Targets::~Targets()
 {
 
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <kad/common/no_copy_or_move.hpp>
 #include <kad/common/release_assert.hpp>
 
 #include <functional>
@@ -8,13 +9,52 @@
 namespace kad::common
 {
 	template <typename Type>
-	class Lazy
+	class Lazy : public common::NoCopy
 	{
 	public:
-		constexpr Lazy(std::function<void(std::optional<Type>&)> init)
+		constexpr Lazy(
+			std::function<void(std::optional<Type>&)> init,
+			std::function<void(Type&)> destory = nullptr
+		)
 			: init_{ std::move(init) }
+			, destroy_{ std::move(destory) }
 			, value_{ std::nullopt }
 		{ }
+
+		constexpr ~Lazy()
+		{
+			if (value_.has_value())
+			{
+				if (destroy_)
+				{
+					destroy_(value_.value());
+				}
+			}
+		}
+
+		constexpr Lazy(Lazy&& other)
+		{
+			init_ = std::move(other.init_);
+			other.init_ = nullptr;
+
+			destroy_= std::move(other.destroy_);
+			other.destroy_ = nullptr;
+
+			value_ = std::move(other.value_);
+			other.value_.reset();
+		}
+
+		constexpr Lazy& operator=(Lazy&& other)
+		{
+			init_ = std::move(other.init_);
+			other.init_ = nullptr;
+
+			destroy_= std::move(other.destroy_);
+			other.destroy_ = nullptr;
+
+			value_ = std::move(other.value_);
+			other.value_.reset();
+		}
 
 		constexpr Type* operator->() { TryInit(); return  get(); }
 		constexpr const Type* operator->() const { TryInit(); return get(); }
@@ -32,7 +72,18 @@ namespace kad::common
 
 		constexpr explicit operator bool() const { return value_.has_value(); }
 
-		constexpr void invalidate() { value_.reset(); }
+		constexpr void invalidate()
+		{
+			if (value_.has_value())
+			{
+				if (destroy_)
+				{
+					destroy_(value_.value());
+				}
+			}
+
+			value_.reset();
+		}
 
 	private:
 		constexpr void TryInit() const
@@ -47,7 +98,8 @@ namespace kad::common
 
 	private:
 		mutable std::function<void(std::optional<Type>&)>	init_{ nullptr };
-		mutable std::optional<Type>							value_;
+		mutable std::function<void(Type&)>					destroy_{ nullptr };
+		mutable std::optional<Type>							value_{ std::nullopt };
 
 	};
 }
