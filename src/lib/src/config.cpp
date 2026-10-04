@@ -27,10 +27,10 @@ namespace
 	}
 }
 
-Config::Config(Context& context)
+Config::Config(Context* context)
 	: context_{ context }
-	, path_config_{ context_.path_kad_folder() / KAD_CONFIG }
-	, path_config_presets_{ context_.path_kad_folder() / KAD_PRESETS }
+	, path_config_{ context_->path_kad_folder() / KAD_CONFIG }
+	, path_config_presets_{ context_->path_kad_folder() / KAD_PRESETS }
 {
 	SPDLOG_LOGGER_INFO(logger(), "Config path({})", path_config_.string());
 	SPDLOG_LOGGER_INFO(logger(), "Presets path({})", path_config_presets_.string());
@@ -77,7 +77,7 @@ Config::Config(Context& context)
 			presets_.emplace(
 				std::piecewise_construct,
 				std::forward_as_tuple(name),
-				std::forward_as_tuple(*this, name)
+				std::forward_as_tuple(this, name)
 			);
 
 			SPDLOG_LOGGER_DEBUG(logger(), "Found preset({})", name);
@@ -105,7 +105,7 @@ Config::~Config()
 
 spdlog::logger* Config::logger() const
 {
-	return context_.logger();
+	return context().logger();
 }
 
 void Config::ResolveActivePreset()
@@ -152,7 +152,7 @@ Preset& Config::CreatePreset(const std::string& name, const std::filesystem::pat
 	const auto it = presets_.emplace(
 		std::piecewise_construct,
 		std::forward_as_tuple(name),
-		std::forward_as_tuple(*this, name, build_directory)
+		std::forward_as_tuple(this, name, build_directory)
 	);
 
 	// If no active preset, we should set new preset as active.

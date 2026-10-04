@@ -19,7 +19,7 @@ namespace kad::lib
 		size_t max_depth = 100
 	);
 
-	class Context : public kad::common::NoCopyOrMove
+	class Context : public kad::common::NoCopy
 	{
 	public:
 		struct Settings

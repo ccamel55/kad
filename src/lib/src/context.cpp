@@ -80,7 +80,7 @@ Context::Context(Context::Settings settings)
 
 		return logger;
 	}() }
-	, config_{ *this }
+	, config_{ this }
 {
 	SPDLOG_LOGGER_INFO(logger(), "Context created");
 }

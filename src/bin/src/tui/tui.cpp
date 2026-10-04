@@ -7,18 +7,18 @@
 
 using namespace kad::tui;
 
-Tui::Tui(const TuiData& data)
-	: data_{ data }
-{
-
-}
+Tui::Tui(const lib::Targets& targets)
+	: targets_{ targets }
+{ }
 
 void Tui::RunBlocking()
 {
 	auto screen = ftxui::App::Fullscreen();
 	screen.TrackMouse(false);
 
-	auto entries = data_.targets | std::ranges::to<std::vector<std::string>>();
+	auto entries = targets_.targets()
+		| std::ranges::views::keys
+		| std::ranges::to<std::vector<std::string>>();
 
 	std::string search;
 	std::optional<rapidfuzz::fuzz::CachedRatio<std::string::value_type>> scorer;
@@ -46,7 +46,9 @@ void Tui::RunBlocking()
 			if (search.empty())
 			{
 				scorer.reset();
-				entries = data_.targets | std::ranges::to<std::vector<std::string>>();
+				entries = targets_.targets()
+					| std::ranges::views::keys
+					| std::ranges::to<std::vector<std::string>>();
 			}
 			else
 			{
@@ -54,7 +56,7 @@ void Tui::RunBlocking()
 				entries.clear();
 
 				std::vector<std::pair<std::string, double>> results;
-				for (const auto& target: data_.targets)
+				for (const auto& target: targets_.targets() | std::ranges::views::keys)
 				{
 					const auto name_lower = target
 						| std::ranges::views::transform([](char c){ return std::tolower(c); })

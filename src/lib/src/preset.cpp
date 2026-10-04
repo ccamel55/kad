@@ -44,14 +44,14 @@ namespace
 }
 
 Preset::Preset(
-	Config& config,
+	Config* config,
 	const std::string& name,
 	const std::filesystem::path& build_directory
 )
 	: config_{ config }
-	, path_preset_file_{ config.path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
-	, path_preset_folder_{ config.path_config_presets() / name }
-	, data_{ [this, &config, &build_directory](auto& x) {
+	, path_preset_file_{ config->path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
+	, path_preset_folder_{ config->path_config_presets() / name }
+	, data_{ [this, &build_directory](auto& x) {
 		if (std::filesystem::is_regular_file(path_preset_file_))
 		{
 			// If the config file exists, we should try to reload it.
@@ -81,7 +81,7 @@ Preset::Preset(
 		{
 			// If we don't have a config file we should try to create one.
 			// Also mark it as dirty so the file gets created on destruction.
-			x.emplace(config::Preset{.build_directory = common::file::TryGetRelativeFromBase(build_directory, config.context().path_root())});
+			x.emplace(config::Preset{.build_directory = common::file::TryGetRelativeFromBase(build_directory, config_->context().path_root())});
 			x.value().SetDirty();
 
 			SPDLOG_LOGGER_DEBUG(logger(), "Could not find preset({}) on disk, creating default instance", path_preset_file_.string());
@@ -155,7 +155,7 @@ Preset::Preset(
 			api_response_file.has_value() == false
 		);
 	}},
-	reply_codemodel_{[this]( auto& x) {
+	reply_codemodel_{[this](auto& x) {
 		const auto codemodel_file_opt = GetCodeModelFile();
 		if (!codemodel_file_opt.has_value())
 		{
@@ -172,12 +172,23 @@ Preset::Preset(
 
 		x.emplace(kad::common::json::ParseFile<kad::model::reply::CodeModel>(codemodel_file));
 		SPDLOG_LOGGER_DEBUG(logger(), "Loaded codemodel file({})", codemodel_file.string());
+	}},
+	targets_ {[this](auto& x) {
+		const auto& code_model_opt = GetCodeModel();
+		if (!code_model_opt.has_value())
+		{
+			x.emplace(std::unexpected{ std::format("Could not get codemodel error({})", code_model_opt.error()) });
+			return;
+		}
+
+		x.emplace(Targets{ this, code_model_opt.value() });
+		SPDLOG_LOGGER_DEBUG(logger(), "Loaded {} targets", GetNumTargets(code_model_opt.value().configurations));
 	}}
 { }
 
 spdlog::logger* Preset::logger() const
 {
-	return config_.logger();
+	return config().logger();
 }
 
 void Preset::Delete()

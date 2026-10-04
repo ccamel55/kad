@@ -27,7 +27,18 @@ namespace
 		void HandleCommandImpl()
 		{
 			const auto* parent_data = Parent()->DataAs<struct CommandTarget::Data>();
-			std::println("Handled target->build command preset({}) target({})", parent_data->preset, parent_data->target);
+			const auto& config = parent_data->context->config();
+
+			const auto& preset_name = parent_data->preset.empty()
+				? config.data().active_preset
+				: parent_data->preset;
+
+			const auto* preset = config.FindPreset(preset_name);
+			if (!preset)
+			{
+				std::println("Preset({}) does not exists", parent_data->preset);
+				return;
+			}
 		}
 
 	private:

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstddef>
+#include <flat_map>
+#include <flat_set>
 #include <type_traits>
 
 namespace kad::common
@@ -9,10 +11,10 @@ namespace kad::common
 	// Checks if a given type is an instance of another template type.
 	//
 
-	template<typename Type, template<typename...> typename TemplateType>
+	template <typename Type, template<typename...> typename TemplateType>
 	inline constexpr bool is_instance_of_v = std::false_type{ };
 
-	template<template<typename...> typename TemplateType, typename... ArgsT>
+	template <template<typename...> typename TemplateType, typename... ArgsT>
 	inline constexpr bool is_instance_of_v<TemplateType<ArgsT...>, TemplateType> = std::true_type{ };
 
 	//
@@ -24,5 +26,31 @@ namespace kad::common
 	{
 		{ t.resize(size_t{}) };
 		{ t.clear() };
+	};
+
+	template <typename...Args>
+	std::flat_map<Args...> FlatMapReserved(std::size_t new_cap)
+	{
+		using FlatMap =  std::flat_map<Args...>;
+
+		using KeyContainer		= typename FlatMap::key_container_type;
+		using ValueContainer	= typename FlatMap::mapped_container_type;
+
+		KeyContainer keys;
+		if constexpr(requires { keys.reserve(new_cap); })
+		{
+			keys.reserve(new_cap);
+		}
+
+		ValueContainer values;
+		if constexpr(requires { values.reserve(new_cap); })
+		{
+			values.reserve(new_cap);
+		}
+
+		FlatMap map;
+		map.replace(std::move(keys), std::move(values));
+
+		return map;
 	};
 }

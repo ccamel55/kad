@@ -2,25 +2,21 @@
 
 #include <kad/bin/cli/base.hpp>
 
+#include <kad/lib/target.hpp>
+
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/component/component.hpp>
 
 namespace kad::tui
 {
-	struct TuiData
-	{
-		std::set<std::string> targets;
-	};
-
 	class Tui
 	{
 	public:
-		explicit Tui(const TuiData& data);
-
+		explicit Tui(const lib::Targets& targets);
 		void RunBlocking();
 
 	private:
-		TuiData data_;
+		const lib::Targets& targets_;
 
 	};
 
