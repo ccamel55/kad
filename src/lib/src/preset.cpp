@@ -38,123 +38,74 @@ namespace
 	}
 }
 
-std::optional<std::filesystem::path> kad::lib::GetApiReplyFile(const std::filesystem::path& path)
-{
-	std::string reply_file_name;
-	std::string reply_file_ordering;
-
-	// File with largest lexicographic order is the latest/current file.
-	// Index files follow naming: index-{random string}.json
-	// Error files follow naming: error-{random-string}.json
-	for (const auto& entry: std::filesystem::directory_iterator{ path })
-	{
-		if (entry.is_directory())
-		{
-			continue;
-		}
-
-		const auto& entry_path = entry.path();
-		if (entry_path.extension().string() != ".json")
-		{
-			continue;
-		}
-
-		constexpr auto PREFIX_INDEX = "index-";
-		constexpr auto PREFIX_ERROR = "error-";
-
-		const std::string filename = entry_path.stem().string();
-		std::string ordering;
-
-		if (filename.starts_with(PREFIX_INDEX))
-		{
-			ordering = filename.substr(std::strlen(PREFIX_INDEX));
-		}
-		else if (filename.starts_with(PREFIX_ERROR))
-		{
-			ordering = filename.substr(std::strlen(PREFIX_ERROR));
-		}
-		else
-		{
-			continue;
-		}
-
-		if (ordering > reply_file_ordering)
-		{
-			reply_file_name = filename;
-			reply_file_ordering = ordering;
-		}
-	}
-
-	if (reply_file_name.empty())
-	{
-		return std::nullopt;
-	}
-
-	return std::make_optional((std::filesystem::absolute(path) / reply_file_name).replace_extension(".json"));
-}
-
-Preset::Preset(Config& config, const std::string& name)
+Preset::Preset(
+	Config& config,
+	const std::string& name,
+	const std::filesystem::path& build_directory
+)
 	: config_{ config }
 	, path_preset_file_{ config.path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
 	, path_preset_folder_{ config.path_config_presets() / name }
 	, data_{ [&](auto& x) {
-		release_assert(std::filesystem::is_regular_file(path_preset_file_), "preset file must exist");
-
-		auto& preset = x.emplace(kad::common::json::ParseFile<config::Preset>(path_preset_file_));
-		if (preset->revision != config::REVISION_PRESET) [[unlikely]]
+		if (std::filesystem::is_regular_file(path_preset_file_))
 		{
-			if (!CanMigrate())
+			// If the config file exists, we should try to reload it.
+			auto& preset = x.emplace(kad::common::json::ParseFile<config::Preset>(path_preset_file_));
+			if (preset->revision != config::REVISION_PRESET) [[unlikely]]
 			{
-				throw std::runtime_error(std::format(
-					"config revisions incompatible, manual migration required. current_revision({}) config_revision({})",
-					config::REVISION_PRESET, preset->revision
-				));
-			}
+				if (!CanMigrate())
+				{
+					throw std::runtime_error(std::format(
+						"config revisions incompatible, manual migration required. current_revision({}) config_revision({})",
+						config::REVISION_PRESET, preset->revision
+					));
+				}
 
-			ApplyMigration();
+				ApplyMigration();
+			}
+		}
+		else if (!build_directory.empty())
+		{
+			// If we don't have a config file we should try to create one.
+			x.emplace(config::Preset{
+				.build_directory = common::file::TryGetRelativeFromBase(build_directory, config.context().path_root())
+			});
+
+			{
+				std::ofstream out(path_preset_file_);
+				out << common::json::Dump(data_.value().value());
+			}
+		}
+		else [[unlikely]]
+		{
+			throw std::runtime_error("could not create new file, build directory empty");
+		}
+
+		if (!std::filesystem::is_directory(path_preset_folder_))
+		{
+			std::filesystem::create_directory(path_preset_folder_);
 		}
 	}}
-{
-	release_assert(std::filesystem::is_regular_file(path_preset_file_), "preset file must exist");
-	release_assert(std::filesystem::is_directory(path_preset_folder_), "preset folder must exist");
-}
-
-Preset::Preset(Config& config, const std::string& name, const std::filesystem::path& build_directory)
-	: config_{ config }
-	, path_preset_file_{ config.path_config_presets() / std::filesystem::path{ name }.replace_extension(PRESET_EXTENSION) }
-	, path_preset_folder_{ config.path_config_presets() / name }
-	, data_{ [&](auto& x) {
-		x.emplace(config::Preset{
-			.build_directory = common::file::TryGetRelativeFromBase(build_directory, config.context().path_root())
-		});
-	}}
-{
-	release_assert(!std::filesystem::is_regular_file(path_preset_file_), "preset file must not exist");
-	release_assert(!std::filesystem::is_directory(path_preset_folder_), "preset folder must not exist");
-
-	{
-		std::ofstream out(path_preset_file_);
-		out << common::json::Dump(data_.value().value());
-	}
-
-	std::filesystem::create_directory(path_preset_folder_);
-}
+{ }
 
 Preset::~Preset()
 {
 	if (delete_)
 	{
-		std::filesystem::remove(path_preset_file_);
-		std::filesystem::remove_all(path_preset_folder_);
-		return;
-	}
-
-	if (data_.has_value() && data_.value().dirty())
-	{
+		if (std::filesystem::is_regular_file(path_preset_file_))
 		{
-			std::ofstream out(path_preset_file_);
-			out << common::json::Dump(data_.value().value());
+			std::filesystem::remove(path_preset_file_);
 		}
+
+		if (std::filesystem::is_directory(path_preset_folder_))
+		{
+			std::filesystem::remove_all(path_preset_folder_);
+		}
+	}
+	else if (data_.has_value() && data_.value().dirty())
+	{
+		std::ofstream out(path_preset_file_);
+		out << common::json::Dump(data_.value().value());
 	}
 }
 
@@ -166,7 +117,7 @@ void Preset::Delete()
 	delete_ = true;
 }
 
-void Preset::CreateApiRequest()
+void Preset::CreateApiRequest() const
 {
 	const auto api_request_folder = DataBuildDirectory() / PATH_FILE_API_REQUEST;
 	const auto api_request = model::query::Query{
@@ -199,7 +150,7 @@ bool Preset::HasApiResponse() const
 	return GetApiResponseFile().has_value();
 }
 
-std::optional<std::filesystem::path> Preset::GetApiResponseFile() const
+std::optional<Preset::IndexOrErrorFile> Preset::GetApiResponseFile() const
 {
 	const auto api_response_folder = DataBuildDirectory() / PATH_FILE_API_RESPONSE;
 	if (!std::filesystem::exists(api_response_folder) || !std::filesystem::is_directory(api_response_folder))
@@ -207,27 +158,70 @@ std::optional<std::filesystem::path> Preset::GetApiResponseFile() const
 		return std::nullopt;
 	}
 
-	return GetApiReplyFile(api_response_folder);
+	constexpr auto PREFIX_INDEX = "index-";
+	constexpr auto PREFIX_ERROR = "error-";
+
+	std::string reply_file_name;
+	std::string reply_file_ordering;
+
+	// File with largest lexicographic order is the latest/current file.
+	// Index files follow naming: index-{random string}.json
+	// Error files follow naming: error-{random-string}.json
+	for (const auto& entry: std::filesystem::directory_iterator{ api_response_folder })
+	{
+		if (entry.is_directory())
+		{
+			continue;
+		}
+
+		const auto& entry_path = entry.path();
+		if (entry_path.extension().string() != ".json")
+		{
+			continue;
+		}
+
+		const std::string filename = entry_path.stem().string();
+		std::string ordering;
+
+		if (filename.starts_with(PREFIX_INDEX))
+		{
+			ordering = filename.substr(std::strlen(PREFIX_INDEX));
+		}
+		else if (filename.starts_with(PREFIX_ERROR))
+		{
+			ordering = filename.substr(std::strlen(PREFIX_ERROR));
+		}
+		else
+		{
+			continue;
+		}
+
+		if (ordering > reply_file_ordering)
+		{
+			reply_file_name = filename;
+			reply_file_ordering = ordering;
+		}
+	}
+
+	if (reply_file_name.empty())
+	{
+		return std::nullopt;
+	}
+
+	auto response = (std::filesystem::absolute(api_response_folder) / reply_file_name).replace_extension(".json");
+
+	return reply_file_name.starts_with(PREFIX_INDEX)
+		? std::make_optional<Preset::IndexOrErrorFile>(std::move(response))
+		: std::make_optional<Preset::IndexOrErrorFile>(std::unexpected{ std::move(response) });
+}
+
+std::optional<Preset::IndexOrError> Preset::GetApiResponse() const
+{
+	return std::nullopt;
 }
 
 std::filesystem::path Preset::DataBuildDirectory() const
 {
 	const auto& build_dir = data().build_directory;
 	return build_dir.is_absolute() ? build_dir : config().context().path_root() / build_dir;
-}
-
-Target* Preset::FindTarget(const std::string& name)
-{
-	const auto target = targets_.find(name);
-	return target == targets_.end()
-		? nullptr
-		: &target->second;
-}
-
-const Target* Preset::FindTarget(const std::string& name) const
-{
-	const auto target = targets_.find(name);
-	return target == targets_.end()
-		? nullptr
-		: &target->second;
 }

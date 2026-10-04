@@ -32,6 +32,8 @@ namespace kad::common
 
 		constexpr explicit operator bool() const { return value_.has_value(); }
 
+		constexpr void invalidate() { value_.reset(); }
+
 	private:
 		constexpr void TryInit() const
 		{
@@ -40,7 +42,6 @@ namespace kad::common
 				return;
 			}
 
-			release_assert(init_, "init function must exist if not initializing from value");
 			init_(value_);
 		}
 
