@@ -32,13 +32,10 @@ Config::Config(Context& context)
 	, path_config_{ context_.path_kad_folder() / KAD_CONFIG }
 	, path_config_presets_{ context_.path_kad_folder() / KAD_PRESETS }
 {
-	if (!std::filesystem::is_regular_file(path_config_))
-	{
-		// Create root config file if it doesn't exist
-		std::ofstream out(path_config_);
-		out << common::json::Dump(data_.value());
-	}
-	else
+	SPDLOG_LOGGER_INFO(logger(), "Config path({})", path_config_.string());
+	SPDLOG_LOGGER_INFO(logger(), "Presets path({})", path_config_presets_.string());
+
+	if (std::filesystem::is_regular_file(path_config_))
 	{
 		// Load existing config file
 		data_ = common::json::ParseFile<config::Config>(path_config_);
@@ -56,14 +53,18 @@ Config::Config(Context& context)
 
 			ApplyMigration();
 		}
-	}
 
-	if (!std::filesystem::is_directory(path_config_presets_))
-	{
-		// Create presets directory if it doesn't exist
-		std::filesystem::create_directories(path_config_presets_);
+		SPDLOG_LOGGER_DEBUG(logger(), "Loaded config from disk");
 	}
 	else
+	{
+		// Set to be dirty so that we create a default instance of the config.
+		data_.SetDirty();
+
+		SPDLOG_LOGGER_DEBUG(logger(), "Could not find config on disk, creating default instance");
+	}
+
+	if (std::filesystem::is_directory(path_config_presets_))
 	{
 		// Look for all presets. Preset file name must match CMake preset name.
 		for (const auto& entry: std::filesystem::directory_iterator{ path_config_presets_ })
@@ -78,7 +79,14 @@ Config::Config(Context& context)
 				std::forward_as_tuple(name),
 				std::forward_as_tuple(*this, name)
 			);
+
+			SPDLOG_LOGGER_DEBUG(logger(), "Found preset({})", name);
 		}
+	}
+	else
+	{
+		// Create presets directory if it doesn't exist
+		std::filesystem::create_directories(path_config_presets_);
 	}
 
 	ResolveActivePreset();
@@ -90,7 +98,14 @@ Config::~Config()
 	{
 		std::ofstream out(path_config_);
 		out << common::json::Dump(data_.value());
+
+		SPDLOG_LOGGER_DEBUG(logger(), "Overwritten config file({})", path_config_.string());
 	}
+}
+
+spdlog::logger* Config::logger() const
+{
+	return context_.logger();
 }
 
 void Config::ResolveActivePreset()

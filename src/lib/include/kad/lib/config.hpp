@@ -6,6 +6,8 @@
 #include <kad/common/no_copy_or_move.hpp>
 #include <kad/common/tracked.hpp>
 
+#include <spdlog/logger.h>
+
 #include <filesystem>
 #include <map>
 
@@ -21,6 +23,8 @@ namespace kad::lib
 		explicit Config(Context& context);
 
 		~Config();
+
+		[[nodiscard]] spdlog::logger* logger() const;
 
 		void ResolveActivePreset();
 		void SetActivePreset(const std::string& name);

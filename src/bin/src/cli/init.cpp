@@ -50,5 +50,10 @@ void CommandInit::HandleCommandImpl()
 		std::println("Kad folder already exists at root path({})", folder_safe.string());
 	}
 
-	lib::Context context{ folder_safe, true };
+	lib::Context context{ lib::Context::Settings
+	{
+		.path_root = folder_safe,
+		.create_if_not_exist = true,
+		.log_sinks = { lib::Context::Settings::LogSink::FILE }
+	}};
 }

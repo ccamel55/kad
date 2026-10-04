@@ -239,7 +239,13 @@ CommandPreset::CommandPreset(CLI::App* parent)
 		)
 	}
 	, data_{
-		.context = { [](auto& x){ x.emplace(FindRootFolderOrThrow()); } }
+		.context = { [](auto& x) {
+			x.emplace(lib::Context::Settings
+			{
+				.path_root = FindRootFolderOrThrow(),
+				.log_sinks = { lib::Context::Settings::LogSink::FILE }
+			});
+		} }
 	}
 {
 	Command()->alias("p");

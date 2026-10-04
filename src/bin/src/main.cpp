@@ -24,74 +24,11 @@
 #include <kad/common/string.hpp>
 #include <kad/common/version.hpp>
 
-#include <expected>
-#include <filesystem>
 #include <print>
 
 namespace
 {
 	constexpr kad::common::Version VERSION = { 0, 0, 1 };
-
-	template <typename Type>
-	using ResultStr = std::expected<Type, std::string>;
-
-	[[nodiscard]] ResultStr<std::filesystem::path> GetCodeModelFile(const std::filesystem::path& index_path, const std::string& client_name)
-	{
-		if (!std::filesystem::exists(index_path) || !std::filesystem::is_regular_file(index_path))
-		{
-			return std::unexpected{ std::format("Could not find API resonse index file({})", index_path.string()) };
-		}
-
-		auto index_file = kad::common::json::ParseFile<kad::model::reply::Index>(index_path);
-		const auto client_reply = index_file.reply.clients.find(std::format("client-{}", client_name));
-
-		if (client_reply == index_file.reply.clients.end() || !client_reply->second.queryJson.has_value())
-		{
-			return std::unexpected{ std::format("Could not find client({}) in reply index({})", client_reply->first, index_path.string()) };
-		}
-
-		std::string codemodel_file_name;
-		if (const auto& responses = client_reply->second.queryJson.value().responses; responses.has_value())
-		{
-			// Files should be parsed according to the CMake docs.
-			// https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#v1-reply-file-reference
-			for (const auto& response: responses.value())
-			{
-				if (!response.has_value())
-				{
-					continue;
-				}
-
-				// TODO(allan): maybe we want to warn about this too?
-				// We only know about v2 of the codemodel API so any other major versions should be skipped.
-				if (response->kind != "codemodel" || response->version.major != 2)
-				{
-					continue;
-				}
-
-				codemodel_file_name = response->jsonFile;
-				break;
-			}
-		}
-
-		if (codemodel_file_name.empty())
-		{
-			return std::unexpected{ std::format("Could not find codemodel repsone in index file({})", index_path.string()) };
-		}
-
-		return std::filesystem::absolute(index_path.parent_path()) / codemodel_file_name;
-	}
-
-	[[nodiscard]] ResultStr<kad::model::reply::CodeModel> LoadCodeModel(const std::filesystem::path& codemodel_path)
-	{
-		if (!std::filesystem::exists(codemodel_path) || !std::filesystem::is_regular_file(codemodel_path))
-		{
-			return std::unexpected{ std::format("Could not find codemodel file({})", codemodel_path.string()) };
-		}
-
-		auto codemodel_file = kad::common::json::ParseFile<kad::model::reply::CodeModel>(codemodel_path);
-		return codemodel_file;
-	}
 }
 
 int main(int argc, char** argv)
@@ -139,7 +76,11 @@ int main(int argc, char** argv)
 			std::abort();
 		}
 
-		kad::lib::Context context{ root_folder.value() };
+		kad::lib::Context context{ kad::lib::Context::Settings
+		{
+			.path_root = root_folder.value(),
+			.log_sinks = { kad::lib::Context::Settings::LogSink::FILE }
+		}};
 
 		const auto& config = context.config();
 		const auto& active_preset = config.data().active_preset;
@@ -156,27 +97,12 @@ int main(int argc, char** argv)
 			std::abort();
 		}
 
-		const auto index_file = preset.GetApiResponseFile().value();
-		std::println("CMake index file: {}", index_file.string());
-
-		const auto codemodel_file = GetCodeModelFile(index_file, "kad");
-		if (!codemodel_file)
+		const auto& code_model = preset.GetCodeModel();
+		if (!code_model.has_value())
 		{
-			std::println("{}", codemodel_file.error());
+			std::println("preset({}) missing codemodel {}", active_preset, code_model.error());
 			std::abort();
 		}
-
-		std::println("Client codemodel file: {}", codemodel_file->string());
-
-		const auto code_model = LoadCodeModel(codemodel_file.value());
-		if (!code_model)
-		{
-			std::println("{}", code_model.error());
-			std::abort();
-		}
-
-		std::println("Version: {}", code_model->version);
-		std::println("Path: {}", code_model->paths);
 
 		kad::tui::TuiData data;
 
