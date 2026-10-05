@@ -25,3 +25,6 @@
 [submodule "thirdparty/simdjson"]
 	path = thirdparty/simdjson
 	url = git@github.com:simdjson/simdjson.git
+[submodule "thirdparty/thread-pool"]
+	path = thirdparty/thread-pool
+	url = git@github.com:bshoshany/thread-pool.git
