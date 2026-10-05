@@ -110,12 +110,7 @@ spdlog::logger* Config::logger() const
 
 void Config::ResolveActivePreset()
 {
-	if (data_->active_preset.empty())
-	{
-		return;
-	}
-
-	if (!presets_.contains(data_->active_preset))
+	if (data_->active_preset.empty() || !presets_.contains(data_->active_preset))
 	{
 		data_.mut().active_preset = presets_.empty()
 			? ""

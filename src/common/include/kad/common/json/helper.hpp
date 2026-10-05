@@ -3,6 +3,7 @@
 #include <kad/common/json/serialize_json.hpp>
 
 #include <filesystem>
+#include <fstream>
 #include <string>
 
 namespace kad::common::json
@@ -19,7 +20,14 @@ namespace kad::common::json
 	}
 
 	template <typename Type>
-	[[nodiscard]] Type ParseString(simdjson::padded_string input)
+	void DumpFile(const Type& type, const std::filesystem::path& path)
+	{
+		std::ofstream out(path);
+		out << Dump(type);
+	}
+
+	template <typename Type>
+	[[nodiscard]] Type Parse(simdjson::padded_string input)
 	{
 		simdjson::ondemand::parser parser;
 		simdjson::ondemand::document parsed = parser.iterate(input);
@@ -40,6 +48,6 @@ namespace kad::common::json
 		{
 			throw std::runtime_error(simdjson::error_message(padded_str.error()));
 		}
-		return ParseString<Type>(std::move(padded_str.value()));
+		return Parse<Type>(std::move(padded_str.value()));
 	}
 }

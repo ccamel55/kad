@@ -4,6 +4,7 @@ library(
 
 	DEPENDENCIES
 		magic_enum::magic_enum
+		spdlog::spdlog
 		simdjson::simdjson
 		subprocess::subprocess
 		visit_struct::visit_struct

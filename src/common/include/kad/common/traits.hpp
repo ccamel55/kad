@@ -53,4 +53,22 @@ namespace kad::common
 
 		return map;
 	};
+
+	template <typename...Args>
+	std::flat_set<Args...> FlatSetReserved(std::size_t new_cap)
+	{
+		using FlatSet	=  std::flat_set<Args...>;
+		using Container	= typename FlatSet::container_type;
+
+		Container values;
+		if constexpr(requires { values.reserve(new_cap); })
+		{
+			values.reserve(new_cap);
+		}
+
+		FlatSet set;
+		set.replace(std::move(values));
+
+		return set;
+	};
 }

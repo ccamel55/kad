@@ -31,7 +31,7 @@ namespace kad::lib
 			};
 
 			std::filesystem::path path_root;
-			bool create_if_not_exist{ false };
+			bool create_if_missing{ false };
 
 			kad::common::BitFlag<LogSink> log_sinks{ LogSink::NONE };
 			std::vector<std::shared_ptr<spdlog::sinks::sink>> custom_sinks{ };
@@ -52,6 +52,7 @@ namespace kad::lib
 		std::filesystem::path path_root_;
 		std::filesystem::path path_kad_;
 
+		std::filesystem::path path_log_;
 		mutable spdlog::logger logger_;
 
 		Config config_;
