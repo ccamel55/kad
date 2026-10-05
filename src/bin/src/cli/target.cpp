@@ -1,4 +1,5 @@
 #include <kad/bin/cli/target.hpp>
+#include <kad/bin/process/cmake.hpp>
 
 #include <print>
 
@@ -36,8 +37,49 @@ namespace
 			const auto* preset = config.FindPreset(preset_name);
 			if (!preset)
 			{
-				std::println("Preset({}) does not exists", parent_data->preset);
+				std::println("Preset({}) does not exists", preset_name);
 				return;
+			}
+
+			const auto& target_name = parent_data->target;
+
+			// Only check if target exists if it's not a known reserved keyword such as "all"
+			if (target_name != "all")
+			{
+				const auto& targets = preset->GetTargets();
+				const auto* target = targets->FindTarget(target_name);
+
+				if (!target)
+				{
+					std::println("Preset({}) target({}) does not exists", preset_name, target_name);
+					return;
+				}
+			}
+
+			kad::process::CMake cmake{ };
+			auto handle = cmake.Build({
+				.build_directory = preset->DataBuildDirectory(),
+				.target = target_name
+			});
+
+			if (!handle.has_value())
+			{
+				std::println("{}", handle.error());
+				return;
+			}
+
+			const auto result = kad::common::WaitUntilExit(*handle.value(), true, true, [](
+				const kad::common::Process::Output output,
+				const std::string& data
+			)
+			{
+				std::ignore = output;
+				std::print("{}", data);
+			});
+
+			if (result != 0)
+			{
+				std::println("Program exited with code: {}", result);
 			}
 		}
 

@@ -100,7 +100,7 @@ namespace
 			const auto* preset = config.FindPreset(preset_name);
 			if (!preset)
 			{
-				std::println("Preset({}) does not exists", parent_data->preset);
+				std::println("Preset({}) does not exists", preset_name);
 				return;
 			}
 
