@@ -75,7 +75,7 @@ macro(test)
 		${ARGN}
 	)
 
-	project(${LIB_NAME})
+	project(${LIB_NAME}-test)
 
 	message(STATUS "Test: ${PROJECT_NAME}")
 	message(STATUS "	Dependencies: ${LIB_DEPENDENCIES}")

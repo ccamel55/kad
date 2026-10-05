@@ -15,12 +15,12 @@ namespace kad::lib
 {
 	class Context;
 
-	class Config : public common::NoCopyOrMove
+	class Config : public common::NoCopy
 	{
 	public:
 		using PresetMap = std::map<std::string, Preset>;
 
-		explicit Config(Context& context);
+		explicit Config(Context* context);
 
 		~Config();
 
@@ -29,8 +29,8 @@ namespace kad::lib
 		void ResolveActivePreset();
 		void SetActivePreset(const std::string& name);
 
-		[[nodiscard]] Context& context() { return context_; }
-		[[nodiscard]] const Context& context() const { return context_; }
+		[[nodiscard]] Context& context() { return *context_; }
+		[[nodiscard]] const Context& context() const { return *context_; }
 
 		[[nodiscard]] const std::filesystem::path& path_config() const { return path_config_; }
 		[[nodiscard]] const std::filesystem::path& path_config_presets() const { return path_config_presets_; }
@@ -48,7 +48,7 @@ namespace kad::lib
 		void RemovePreset(PresetMap::iterator it);
 
 	private:
-		Context& context_;
+		Context* context_;
 
 		std::filesystem::path path_config_;
 		std::filesystem::path path_config_presets_;

@@ -93,27 +93,27 @@ namespace
 			auto* parent_data = Parent()->DataAs<struct CommandPreset::Data>();
 			auto& config = parent_data->context->config();
 
-			const auto& preset = parent_data->preset.empty()
+			const auto& preset_name = parent_data->preset.empty()
 				? config.data().active_preset
 				: parent_data->preset;
 
-			auto it = config.presets().find(preset);
-			if (it == config.presets().end())
+			const auto* preset = config.FindPreset(preset_name);
+			if (!preset)
 			{
-				std::println("Preset({}) does not exists", parent_data->preset);
+				std::println("Preset({}) does not exists", preset_name);
 				return;
 			}
 
-			if (!it->second.HasApiRequest())
+			if (!preset->HasApiRequest())
 			{
-				it->second.CreateApiRequest();
+				preset->CreateApiRequest();
 			}
 
 			kad::process::CMake cmake{ };
 			auto handle = cmake.Configue({
 				.cmake_root = config.context().path_root(),
-				.build_directory = it->second.DataBuildDirectory(),
-				.preset = preset
+				.build_directory = preset->DataBuildDirectory(),
+				.preset = preset_name
 			});
 
 			if (!handle.has_value())
@@ -276,7 +276,7 @@ void CommandPreset::HandleCommandImpl()
 		for (const auto& [name, preset]: config.presets())
 		{
 			const bool active = name == config.data().active_preset;
-			std::println("\t- '{}' api_response({}) {}", name, preset.HasApiResponse(), active ? "(active)" : "");
+			std::println("\t- '{}' api_response {}", name, active ? "(active)" : "");
 		}
 	}
 	else

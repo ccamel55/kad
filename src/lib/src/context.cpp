@@ -51,22 +51,22 @@ ResultStr<std::filesystem::path> kad::lib::FindRootDirectory(
 
 Context::Context(Context::Settings settings)
 	: path_root_{ settings.path_root }
-	, path_kad_{ common::file::GetDirectorySafe(path_root_ / KAD_FOLDER, settings.create_if_not_exist) }
+	, path_kad_{ common::file::GetDirectorySafe(path_root_ / KAD_FOLDER, settings.create_if_missing) }
+	, path_log_{ path_kad_ / "logs" }
 	, logger_{ [&]() {
 		using namespace spdlog;
 		// Add default sinks from sink bit set
 		if (settings.log_sinks.is_set(Context::Settings::LogSink::FILE))
 		{
 			// Create log directory if it doesn't exist
-			std::filesystem::path log_path = path_kad_folder() / "logs";
-			if (!std::filesystem::is_directory(log_path))
+			if (!std::filesystem::is_directory(path_log_))
 			{
-				std::filesystem::create_directory(log_path);
+				std::filesystem::create_directory(path_log_);
 			}
 
-			log_path /= GetDailyLogName("lib-kad");
+			path_log_ /= GetDailyLogName("lib-kad");
 
-			auto& sink = settings.custom_sinks.emplace_back(std::make_shared<sinks::basic_file_sink_st>(log_path.string()));
+			auto& sink = settings.custom_sinks.emplace_back(std::make_shared<sinks::basic_file_sink_st>(path_log_.string()));
 			sink->set_level(level::trace);
 			sink->set_pattern("[%x %X] [%l] [%!] %v");
 
@@ -80,7 +80,7 @@ Context::Context(Context::Settings settings)
 
 		return logger;
 	}() }
-	, config_{ *this }
+	, config_{ this }
 {
 	SPDLOG_LOGGER_INFO(logger(), "Context created");
 }

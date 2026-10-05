@@ -1,6 +1,7 @@
 #pragma once
 
 #include <kad/lib/data.hpp>
+#include <kad/lib/target.hpp>
 
 #include <kad/common/alias.hpp>
 #include <kad/common/no_copy_or_move.hpp>
@@ -20,11 +21,11 @@ namespace kad::lib
 
 	class Config;
 
-	class Preset : public common::NoCopyOrMove
+	class Preset : public common::NoCopy
 	{
 	public:
 		Preset(
-			Config& config,
+			Config* config,
 			const std::string& name,
 			const std::filesystem::path& build_directory = ""
 		);
@@ -49,13 +50,14 @@ namespace kad::lib
 		[[nodiscard]] ResultStr<std::filesystem::path> GetCodeModelFile() const;
 		[[nodiscard]] const ResultStr<model::reply::CodeModel>& GetCodeModel() const { return reply_codemodel_.value(); }
 
-		[[nodiscard]] Config& config() { return config_; }
-		[[nodiscard]] const Config& config() const { return config_; }
+		[[nodiscard]] const ResultStr<Targets>& GetTargets() const { return targets_.value(); }
+
+		[[nodiscard]] Config& config() { return *config_; }
+		[[nodiscard]] const Config& config() const { return *config_; }
 
 		[[nodiscard]] const std::filesystem::path& path_preset_file() const { return path_preset_file_; }
 		[[nodiscard]] const std::filesystem::path& path_preset_folder() const { return path_preset_folder_; }
 
-		void data_lazy_invalidate() { data_.invalidate(); }
 		[[nodiscard]] const config::Preset& data() const { return data_.value().value(); }
 
 		// Get corrected build directory from config file.
@@ -64,7 +66,7 @@ namespace kad::lib
 		[[nodiscard]] std::filesystem::path ApiResponseFolder() const;
 
 	private:
-		Config& config_;
+		Config* config_;
 
 		bool dirty_{ false };
 		bool delete_{ false };
@@ -76,5 +78,7 @@ namespace kad::lib
 
 		mutable common::Lazy<ResultStr<IndexOrError>> reply_index_;
 		mutable common::Lazy<ResultStr<model::reply::CodeModel>> reply_codemodel_;
+
+		mutable common::Lazy<ResultStr<Targets>> targets_;
 	};
 }

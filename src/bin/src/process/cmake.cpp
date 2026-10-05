@@ -15,5 +15,11 @@ kad::common::CreateProcessResult CMake::Configue(const ParamsConfigure& params) 
 
 kad::common::CreateProcessResult CMake::Build(const ParamsBuild& params) const
 {
-	return std::unexpected{ "not implemented" };
+	common::Process::Params process_params
+	{
+		.args = { "--build", ".", "--target", params.target },
+		.working_directory = params.build_directory,
+	};
+
+	return common::CreateProcess(cmake_, std::move(process_params));
 }

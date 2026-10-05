@@ -53,7 +53,7 @@ void CommandInit::HandleCommandImpl()
 	lib::Context context{ lib::Context::Settings
 	{
 		.path_root = folder_safe,
-		.create_if_not_exist = true,
+		.create_if_missing = true,
 		.log_sinks = { lib::Context::Settings::LogSink::FILE }
 	}};
 }

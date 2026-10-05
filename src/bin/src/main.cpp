@@ -97,34 +97,16 @@ int main(int argc, char** argv)
 			std::abort();
 		}
 
-		const auto& code_model = preset.GetCodeModel();
-		if (!code_model.has_value())
+		const auto& targets = preset.GetTargets();
+		if (!targets.has_value())
 		{
-			std::println("preset({}) missing codemodel {}", active_preset, code_model.error());
+			std::println("preset({}) missing targets {}", active_preset, targets.error());
 			std::abort();
-		}
-
-		kad::tui::TuiData data;
-
-		for (const auto& configuration: code_model->configurations)
-		{
-			for (const auto& target: configuration.targets)
-			{
-				data.targets.emplace(target.name);
-			}
-
-			if (configuration.abstractTargets.has_value())
-			{
-				for (const auto& abstract_target: configuration.abstractTargets.value())
-				{
-					data.targets.emplace(abstract_target.name);
-				}
-			}
 		}
 
 		// TUI instance
 		{
-			kad::tui::Tui tui{ data };
+			kad::tui::Tui tui{ targets.value() };
 			tui.RunBlocking();
 		}
 	}

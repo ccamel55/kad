@@ -53,7 +53,9 @@ namespace kad::common
 			other.destroy_ = nullptr;
 
 			value_ = std::move(other.value_);
-			other.value_.reset();
+			other.value_ = std::nullopt;
+
+			return *this;
 		}
 
 		constexpr Type* operator->() { TryInit(); return  get(); }
